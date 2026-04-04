@@ -1,8 +1,11 @@
 package com.example.glucoguard.presentation
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.content.ContextCompat
+import com.example.glucoguard.service.GlucoseMonitorService
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +25,7 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ContextCompat.startForegroundService(this, Intent(this, GlucoseMonitorService::class.java))
         setContent {
             GlucoGuardTheme {
                 GlucoseTestScreen()
