@@ -17,6 +17,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.glucoguard.Config
 import com.example.glucoguard.GlucoGuardApp
+import com.example.glucoguard.R
 import com.example.glucoguard.alarm.VibrationHelper
 import com.example.glucoguard.api.GlucoseReading
 import com.example.glucoguard.api.LibreLinkUpClient
@@ -124,8 +125,8 @@ class GlucoseMonitorService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         )
         return NotificationCompat.Builder(this, GlucoGuardApp.CHANNEL_ID)
-            .setContentTitle("GlucoGuard")
-            .setContentText("Monitoring glucose...")
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.notif_monitoring_text))
             .setSmallIcon(android.R.drawable.ic_menu_compass)
             .setContentIntent(openIntent)
             .setOngoing(true)

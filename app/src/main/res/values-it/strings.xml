@@ -1,0 +1,25 @@
+<resources>
+    <!-- Notification channels -->
+    <string name="channel_monitoring_name">Monitoraggio GlucoGuard</string>
+    <string name="channel_monitoring_desc">Notifica persistente durante il monitoraggio del glucosio</string>
+    <string name="channel_alarm_name">Allarmi GlucoGuard</string>
+    <string name="channel_alarm_desc">Allarme a schermo intero quando il glucosio è fuori range</string>
+
+    <!-- Monitoring notification -->
+    <string name="notif_monitoring_text">Monitoraggio glucosio in corso\u2026</string>
+
+    <!-- Alarm notification titles -->
+    <string name="alarm_low_title">Glucosio BASSO!</string>
+    <string name="alarm_high_title">Glucosio ALTO!</string>
+
+    <!-- Alarm screen -->
+    <string name="label_low">BASSO</string>
+    <string name="label_high">ALTO</string>
+    <string name="unit_mgdl">mg/dL</string>
+    <string name="btn_dismiss">Ignora</string>
+    <string name="btn_snooze">Snooze</string>
+
+    <!-- Main screen -->
+    <string name="loading">Caricamento\u2026</string>
+    <string name="trend_label">Andamento</string>
+</resources>

@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -20,6 +21,7 @@ import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Text
 import com.example.glucoguard.Config
+import com.example.glucoguard.R
 import com.example.glucoguard.presentation.theme.GlucoGuardTheme
 import com.example.glucoguard.service.GlucoseMonitorService
 
@@ -93,6 +95,16 @@ class AlarmActivity : ComponentActivity() {
     }
 }
 
+// Colors
+private val ColorBackground = Color(0xFF111318)
+private val ColorLow        = Color(0xFFFF453A) // vivid red
+private val ColorHigh       = Color(0xFFFFCC00) // amber yellow
+private val ColorUnit       = Color(0xFF8E8E93) // muted gray
+private val ColorBtnDismiss  = Color(0xFF3A3A3C)
+private val ColorBtnSnooze   = Color(0xFF0A84FF) // iOS blue
+private val ColorBtnPicker   = Color(0xFF2C2C2E)
+private val ColorBtnText     = Color(0xFFEBEBF5) // off-white for contrast on dark buttons
+
 @Composable
 fun AlarmScreen(
     glucoseValue: Int,
@@ -101,81 +113,83 @@ fun AlarmScreen(
     onDismiss: () -> Unit,
     onSnooze: (Int) -> Unit
 ) {
-    val valueColor = if (isLow) Color(0xFFFF3B30) else Color(0xFFFF9500)
-    val label = if (isLow) "LOW" else "HIGH"
+    val valueColor = if (isLow) ColorLow else ColorHigh
+    val label = if (isLow) stringResource(R.string.label_low) else stringResource(R.string.label_high)
     var snoozeMinutes by remember { mutableIntStateOf(initialSnoozeMinutes) }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(ColorBackground),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text = label,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 color = valueColor,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.5.sp
             )
             Text(
                 text = "$glucoseValue",
-                fontSize = 44.sp,
+                fontSize = 48.sp,
                 color = valueColor,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                fontWeight = FontWeight.Bold
             )
             Text(
-                text = "mg/dL",
+                text = stringResource(R.string.unit_mgdl),
                 fontSize = 12.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center
+                color = ColorUnit
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Snooze duration picker
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Button(
                     onClick = { if (snoozeMinutes > 1) snoozeMinutes-- },
-                    modifier = Modifier.size(32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                    modifier = Modifier.size(30.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ColorBtnPicker, contentColor = ColorBtnText)
                 ) {
-                    Text("-", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("−", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
                 Text(
                     text = "${snoozeMinutes}m",
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     color = Color.White,
-                    modifier = Modifier.widthIn(min = 40.dp),
+                    modifier = Modifier.widthIn(min = 38.dp),
                     textAlign = TextAlign.Center
                 )
                 Button(
                     onClick = { if (snoozeMinutes < 120) snoozeMinutes++ },
-                    modifier = Modifier.size(32.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                    modifier = Modifier.size(30.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ColorBtnPicker, contentColor = ColorBtnText)
                 ) {
                     Text("+", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                    colors = ButtonDefaults.buttonColors(containerColor = ColorBtnDismiss, contentColor = ColorBtnText)
                 ) {
-                    Text("Dismiss", fontSize = 13.sp)
+                    Text(stringResource(R.string.btn_dismiss), fontSize = 13.sp)
                 }
                 Button(
                     onClick = { onSnooze(snoozeMinutes) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C3A5E))
+                    colors = ButtonDefaults.buttonColors(containerColor = ColorBtnSnooze)
                 ) {
-                    Text("Snooze", fontSize = 13.sp)
+                    Text(stringResource(R.string.btn_snooze), fontSize = 13.sp)
                 }
             }
         }
