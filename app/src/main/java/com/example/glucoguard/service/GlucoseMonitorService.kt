@@ -127,7 +127,7 @@ class GlucoseMonitorService : Service() {
         return NotificationCompat.Builder(this, GlucoGuardApp.CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.notif_monitoring_text))
-            .setSmallIcon(android.R.drawable.ic_menu_compass)
+            .setSmallIcon(R.drawable.ic_logo)
             .setContentIntent(openIntent)
             .setOngoing(true)
             .build()
