@@ -9,7 +9,7 @@ object Config {
 
     // Normal thresholds
     const val NORMAL_LOW = 70
-    const val NORMAL_HIGH = 170
+    const val NORMAL_HIGH = 100
 
     // DND thresholds (more relaxed)
     const val DND_LOW = 60
