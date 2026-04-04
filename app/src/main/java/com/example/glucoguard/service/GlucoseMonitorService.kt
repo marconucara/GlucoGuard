@@ -17,10 +17,12 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.glucoguard.Config
 import com.example.glucoguard.GlucoGuardApp
+import com.example.glucoguard.alarm.VibrationHelper
 import com.example.glucoguard.api.GlucoseReading
 import com.example.glucoguard.api.LibreLinkUpClient
 import com.example.glucoguard.presentation.MainActivity
 import com.example.glucoguard.util.DndHelper
+import java.util.concurrent.atomic.AtomicBoolean
 
 class GlucoseMonitorService : Service() {
 
@@ -33,6 +35,7 @@ class GlucoseMonitorService : Service() {
     private val snoozeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             snoozeUntil = System.currentTimeMillis() + Config.SNOOZE_DURATION_MS
+            alarmActive.set(false)
             Log.d(TAG, "Snoozed until $snoozeUntil")
         }
     }
@@ -45,7 +48,7 @@ class GlucoseMonitorService : Service() {
                     Log.d(TAG, "Glucose: ${reading.value} mg/dL, trend: ${reading.trend}")
                     handleReading(reading)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Poll failed: ${e.message}")
+                    Log.e(TAG, "Poll failed: ${e.javaClass.simpleName}: ${e.message}")
                 }
             }.start()
             handler.postDelayed(this, Config.POLL_INTERVAL_MS)
@@ -86,7 +89,10 @@ class GlucoseMonitorService : Service() {
         val inRange = reading.value in low..high
 
         if (inRange) {
-            // Auto-reset snooze when glucose returns to range
+            if (alarmActive.getAndSet(false)) {
+                Log.d(TAG, "Glucose back in range — alarm cleared")
+                VibrationHelper.stop(applicationContext)
+            }
             if (snoozeUntil != 0L) {
                 Log.d(TAG, "Glucose back in range — snooze cleared")
                 snoozeUntil = 0
@@ -101,14 +107,17 @@ class GlucoseMonitorService : Service() {
             return
         }
 
-        Log.w(TAG, "ALARM: glucose ${reading.value} mg/dL is out of range [$low-$high], DND=$dnd")
-        triggerAlarm(reading)
+        val isLow = reading.value < low
+        Log.w(TAG, "ALARM: glucose ${reading.value} mg/dL out of range [$low-$high], DND=$dnd, isLow=$isLow")
+        triggerAlarm(reading, isLow)
     }
 
-    private fun triggerAlarm(reading: GlucoseReading) {
-        // TODO Step 4: launch AlarmActivity + vibration
-        // For now just log — alarm activity implemented in next step
-        Log.w(TAG, "triggerAlarm() — value=${reading.value}, trend=${reading.trend}")
+    private fun triggerAlarm(reading: GlucoseReading, isLow: Boolean) {
+        alarmActive.set(true)
+        lastAlarmValue = reading.value
+        lastAlarmIsLow = isLow
+        Log.w(TAG, "triggerAlarm() — vibrating, waiting for user to open app")
+        VibrationHelper.start(applicationContext)
     }
 
     private fun buildNotification(): Notification {
@@ -130,5 +139,10 @@ class GlucoseMonitorService : Service() {
         private const val TAG = "GlucoseMonitorService"
         private const val NOTIFICATION_ID = 1
         const val ACTION_SNOOZE = "com.example.glucoguard.ACTION_SNOOZE"
+
+        // Shared alarm state — read by MainActivity.onResume() to redirect to AlarmActivity.
+        val alarmActive = AtomicBoolean(false)
+        @Volatile var lastAlarmValue: Int = 0
+        @Volatile var lastAlarmIsLow: Boolean = false
     }
 }

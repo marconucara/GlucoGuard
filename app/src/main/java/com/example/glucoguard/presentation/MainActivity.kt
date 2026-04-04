@@ -4,8 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.content.ContextCompat
-import com.example.glucoguard.service.GlucoseMonitorService
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,13 +14,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.wear.compose.material3.Text
+import com.example.glucoguard.alarm.AlarmActivity
 import com.example.glucoguard.api.LibreLinkUpClient
 import com.example.glucoguard.presentation.theme.GlucoGuardTheme
+import com.example.glucoguard.service.GlucoseMonitorService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ContextCompat.startForegroundService(this, Intent(this, GlucoseMonitorService::class.java))
@@ -30,6 +32,20 @@ class MainActivity : ComponentActivity() {
             GlucoGuardTheme {
                 GlucoseTestScreen()
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // If an alarm is active, go straight to the alarm screen.
+        // Launching from a foreground activity always works, no BAL restrictions.
+        if (GlucoseMonitorService.alarmActive.get()) {
+            startActivity(
+                Intent(this, AlarmActivity::class.java).apply {
+                    putExtra(AlarmActivity.EXTRA_GLUCOSE_VALUE, GlucoseMonitorService.lastAlarmValue)
+                    putExtra(AlarmActivity.EXTRA_IS_LOW, GlucoseMonitorService.lastAlarmIsLow)
+                }
+            )
         }
     }
 }
