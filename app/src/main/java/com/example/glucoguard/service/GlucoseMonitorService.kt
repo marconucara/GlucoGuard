@@ -34,9 +34,10 @@ class GlucoseMonitorService : Service() {
 
     private val snoozeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            snoozeUntil = System.currentTimeMillis() + Config.SNOOZE_DURATION_MS
+            val durationMs = intent.getLongExtra(EXTRA_SNOOZE_MS, Config.SNOOZE_DURATION_MS)
+            snoozeUntil = System.currentTimeMillis() + durationMs
             alarmActive.set(false)
-            Log.d(TAG, "Snoozed until $snoozeUntil")
+            Log.d(TAG, "Snoozed for ${durationMs / 60_000}m until $snoozeUntil")
         }
     }
 
@@ -93,10 +94,6 @@ class GlucoseMonitorService : Service() {
                 Log.d(TAG, "Glucose back in range — alarm cleared")
                 VibrationHelper.stop(applicationContext)
             }
-            if (snoozeUntil != 0L) {
-                Log.d(TAG, "Glucose back in range — snooze cleared")
-                snoozeUntil = 0
-            }
             return
         }
 
@@ -141,6 +138,7 @@ class GlucoseMonitorService : Service() {
         const val ACTION_SNOOZE = "com.example.glucoguard.ACTION_SNOOZE"
 
         // Shared alarm state — read by MainActivity.onResume() to redirect to AlarmActivity.
+        const val EXTRA_SNOOZE_MS = "snooze_ms"
         val alarmActive = AtomicBoolean(false)
         @Volatile var lastAlarmValue: Int = 0
         @Volatile var lastAlarmIsLow: Boolean = false
