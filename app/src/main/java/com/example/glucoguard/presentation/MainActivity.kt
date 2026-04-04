@@ -8,18 +8,29 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.example.glucoguard.R
 import com.example.glucoguard.alarm.AlarmActivity
@@ -77,7 +88,6 @@ fun trendToArrow(trend: Int): String = when (trend) {
 @Composable
 fun GlucoseTestScreen() {
     val loading = stringResource(R.string.loading)
-    val trendLabel = stringResource(R.string.trend_label)
     var status by remember { mutableStateOf(loading) }
 
     LaunchedEffect(Unit) {
@@ -92,14 +102,20 @@ fun GlucoseTestScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_logo),
+                contentDescription = "GlucoGuard Logo",
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = status,
                 fontSize = 20.sp,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center
             )
         }

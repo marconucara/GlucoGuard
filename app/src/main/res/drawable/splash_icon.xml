@@ -1,27 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:width="48dp"
-        android:height="48dp"
-        android:gravity="center">
-        <shape android:shape="oval">
+    <item>
+        <shape android:shape="rectangle">
             <solid android:color="#FFFFFF" />
         </shape>
     </item>
     <item
-        android:width="40dp"
-        android:height="40dp"
+        android:width="160dp"
+        android:height="160dp"
         android:gravity="center">
         <vector
-            android:width="24dp"
-            android:height="24dp"
-            android:tint="#000000"
-            android:viewportWidth="24"
-            android:viewportHeight="24">
+            android:width="108dp"
+            android:height="108dp"
+            android:viewportWidth="108"
+            android:viewportHeight="108">
             <path
-                android:fillColor="#FF000000"
-                android:pathData="M17.6,11.48 L19.44,8.3a0.63,0.63 0,0 0,-1.09 -0.63l-1.88,3.24a11.43,11.43 0,0 0,-8.94 0L5.65,7.67a0.63,0.63 0,0 0,-1.09 0.63L6.4,11.48A10.81,10.81 0,0 0,1 20L23,20A10.81,10.81 0,0 0,17.6 11.48ZM7,17.25A1.25,1.25 0,1 1,8.25 16,1.25 1.25,0 0,1 7,17.25ZM17,17.25A1.25,1.25 0,1 1,18.25 16,1.25 1.25,0 0,1 17,17.25Z" />
+                android:fillColor="#00A8A8"
+                android:pathData="M54,12C40,35 24,52 24,70C24,86.57 37.43,100 54,100C70.57,100 84,86.57 84,70C84,52 68,35 54,12Z" />
+            <path
+                android:strokeColor="#FFFFFF"
+                android:strokeWidth="4"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M38,75 L46,75 L50,65 L58,85 L62,75 L70,75" />
         </vector>
     </item>
 </layer-list>

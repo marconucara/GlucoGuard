@@ -3,9 +3,12 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Modern Minimal Drop with Monitoring Trend -->
     <path
         android:fillColor="#00A8A8"
         android:pathData="M54,12C40,35 24,52 24,70C24,86.57 37.43,100 54,100C70.57,100 84,86.57 84,70C84,52 68,35 54,12Z" />
+
+    <!-- Pulse/Trend Line -->
     <path
         android:strokeColor="#FFFFFF"
         android:strokeWidth="4"
