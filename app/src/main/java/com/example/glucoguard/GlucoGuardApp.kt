@@ -3,6 +3,7 @@ package com.example.glucoguard
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import com.example.glucoguard.R
 
 class GlucoGuardApp : Application() {
 
@@ -10,14 +11,14 @@ class GlucoGuardApp : Application() {
         super.onCreate()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "GlucoGuard Monitoring", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Persistent notification while GlucoGuard is monitoring glucose"
+            NotificationChannel(CHANNEL_ID, getString(R.string.channel_monitoring_name), NotificationManager.IMPORTANCE_LOW).apply {
+                description = getString(R.string.channel_monitoring_desc)
             }
         )
         nm.createNotificationChannel(
-            NotificationChannel(ALARM_CHANNEL_ID, "GlucoGuard Alarms", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Full-screen alarm when glucose is out of range"
-                setSound(null, null) // vibration handled manually via VibrationHelper
+            NotificationChannel(ALARM_CHANNEL_ID, getString(R.string.channel_alarm_name), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = getString(R.string.channel_alarm_desc)
+                setSound(null, null)
             }
         )
     }
