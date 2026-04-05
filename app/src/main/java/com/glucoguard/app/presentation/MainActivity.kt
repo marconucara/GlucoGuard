@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
             var isBatteryOptIgnored by remember { 
                 mutableStateOf(powerManager.isIgnoringBatteryOptimizations(packageName)) 
             }
+            var hasSkippedBatteryOpt by remember { mutableStateOf(false) }
 
             GlucoGuardTheme {
                 when {
@@ -75,15 +76,34 @@ class MainActivity : ComponentActivity() {
                             isDisclaimerAccepted = true
                         })
                     }
-                    !isBatteryOptIgnored -> {
-                        BatteryOptimizationScreen(onConfigure = {
-                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                data = Uri.parse("package:$packageName")
+                    !isBatteryOptIgnored && !hasSkippedBatteryOpt -> {
+                        BatteryOptimizationScreen(
+                            onConfigure = {
+                                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                try {
+                                    startActivity(intent)
+                                } catch (e: Exception) {
+                                    Log.e("MainActivity", "Failed to open battery settings", e)
+                                    // Fallback totale: apri info app
+                                    try {
+                                        val intent2 = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = Uri.parse("package:$packageName")
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        startActivity(intent2)
+                                    } catch (e2: Exception) {
+                                        Log.e("MainActivity", "All battery intents failed")
+                                    }
+                                }
+                            },
+                            onSkip = {
+                                hasSkippedBatteryOpt = true
+                            },
+                            onRefresh = {
+                                isBatteryOptIgnored = powerManager.isIgnoringBatteryOptimizations(packageName)
                             }
-                            startActivity(intent)
-                        }, onRefresh = {
-                            isBatteryOptIgnored = powerManager.isIgnoringBatteryOptimizations(packageName)
-                        })
+                        )
                     }
                     else -> {
                         MainGlucoseScreen(
@@ -97,10 +117,19 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (GlucoseMonitorService.alarmActive.get()) {
+        if (GlucoseMonitorService.alarmActive.get() || GlucoseMonitorService.noDataAlarmActive.get()) {
+            val isNoData = GlucoseMonitorService.noDataAlarmActive.get()
             val intent = Intent(this, AlarmActivity::class.java).apply {
-                putExtra(AlarmActivity.EXTRA_GLUCOSE_VALUE, GlucoseMonitorService.lastAlarmValue)
-                putExtra(AlarmActivity.EXTRA_IS_LOW, GlucoseMonitorService.lastAlarmIsLow)
+                if (isNoData) {
+                    putExtra(AlarmActivity.EXTRA_ALARM_TYPE, AlarmActivity.TYPE_NO_DATA)
+                    val lastPoll = (applicationContext as GlucoGuardApp).settingsManager.lastSuccessfulPollTimestamp
+                    val mins = if (lastPoll == 0L) 0 else ((System.currentTimeMillis() - lastPoll) / 60_000).toInt()
+                    putExtra(AlarmActivity.EXTRA_MINUTES_SINCE_POLL, mins)
+                } else {
+                    putExtra(AlarmActivity.EXTRA_ALARM_TYPE, AlarmActivity.TYPE_GLUCOSE)
+                    putExtra(AlarmActivity.EXTRA_GLUCOSE_VALUE, GlucoseMonitorService.lastAlarmValue)
+                    putExtra(AlarmActivity.EXTRA_IS_LOW, GlucoseMonitorService.lastAlarmIsLow)
+                }
             }
             startActivity(intent)
         }
@@ -147,7 +176,7 @@ fun DisclaimerScreen(onAccept: () -> Unit) {
 }
 
 @Composable
-fun BatteryOptimizationScreen(onConfigure: () -> Unit, onRefresh: () -> Unit) {
+fun BatteryOptimizationScreen(onConfigure: () -> Unit, onSkip: () -> Unit, onRefresh: () -> Unit) {
     val listState = rememberScalingLazyListState()
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         ScalingLazyColumn(
@@ -183,8 +212,16 @@ fun BatteryOptimizationScreen(onConfigure: () -> Unit, onRefresh: () -> Unit) {
             }
             item { Spacer(modifier = Modifier.height(4.dp)) }
             item {
-                TextButton(onClick = onRefresh) {
-                    Text("Check again", fontSize = 12.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    TextButton(onClick = onRefresh, modifier = Modifier.weight(1f)) {
+                        Text("Check", fontSize = 11.sp)
+                    }
+                    TextButton(onClick = onSkip, modifier = Modifier.weight(1f)) {
+                        Text("Skip", fontSize = 11.sp, color = Color.Gray)
+                    }
                 }
             }
         }
@@ -297,13 +334,22 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
                     Text("Setup Account", fontSize = 10.sp)
                 }
             } else {
+                val lastPoll = settingsManager.lastSuccessfulPollTimestamp
+                val thresholdMs = settingsManager.noDataThresholdMin * 60_000L
+                val isStale = lastPoll != 0L && (System.currentTimeMillis() - lastPoll) > thresholdMs
+                val contentAlpha = if (isStale) 0.4f else 1.0f
+
                 Text(
                     text = glucoseValue?.toString() ?: "--",
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (glucoseValue != null) MaterialTheme.colorScheme.primary else Color.Gray
+                    color = if (glucoseValue != null) MaterialTheme.colorScheme.primary else Color.Gray,
+                    modifier = Modifier.alpha(contentAlpha)
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.alpha(contentAlpha)
+                ) {
                     Text(
                         text = "mg/dL",
                         style = MaterialTheme.typography.labelMedium,
@@ -314,6 +360,16 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
                         text = reading?.trendToArrow() ?: "→",
                         fontSize = 24.sp,
                         color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                if (isStale) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    val mins = (System.currentTimeMillis() - lastPoll) / 60_000
+                    Text(
+                        text = "Stale ($mins min ago)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Red.copy(alpha = 0.8f)
                     )
                 }
             }

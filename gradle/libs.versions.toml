@@ -13,6 +13,7 @@ coreSplashscreen = "1.2.0"
 okhttp = "4.12.0"
 gson = "2.11.0"
 coroutines = "1.8.1"
+security-crypto = "1.1.0"
 
 [libraries]
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
@@ -33,6 +34,7 @@ core-splashscreen = { group = "androidx.core", name = "core-splashscreen", versi
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security-crypto" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

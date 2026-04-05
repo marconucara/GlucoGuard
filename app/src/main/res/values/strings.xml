@@ -39,6 +39,7 @@
     <string name="settings_dnd_thresholds">DND Thresholds</string>
     <string name="settings_low">Low</string>
     <string name="settings_high">High</string>
+    <string name="settings_no_data_threshold">No Data Alarm (min)</string>
 
     <!-- Disclaimer -->
     <string name="disclaimer_title">Medical Disclaimer</string>
@@ -49,4 +50,8 @@
     <string name="battery_opt_title">Battery Optimization</string>
     <string name="battery_opt_text">To ensure 24/7 glucose monitoring and reliable alarms, GlucoGuard must be excluded from battery optimizations. \n\nPlease allow this in the next screen.</string>
     <string name="battery_opt_button">Configure</string>
+
+    <!-- No Data Alarm -->
+    <string name="alarm_no_data_title">No Data Connection</string>
+    <string name="alarm_no_data_text">Last glucose update was %1$d minutes ago. Check your internet or phone connection.</string>
 </resources>

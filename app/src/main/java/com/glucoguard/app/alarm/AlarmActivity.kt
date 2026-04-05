@@ -24,6 +24,7 @@ import com.glucoguard.app.Config
 import com.glucoguard.app.R
 import com.glucoguard.app.presentation.theme.GlucoGuardTheme
 import com.glucoguard.app.service.GlucoseMonitorService
+import java.util.Locale
 
 class AlarmActivity : ComponentActivity() {
 
@@ -35,18 +36,23 @@ class AlarmActivity : ComponentActivity() {
         setTurnScreenOn(true)
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
+        val alarmType = intent.getIntExtra(EXTRA_ALARM_TYPE, TYPE_GLUCOSE)
         val glucoseValue = intent.getIntExtra(EXTRA_GLUCOSE_VALUE, 0)
         val isLow = intent.getBooleanExtra(EXTRA_IS_LOW, true)
+        val minutesSinceLastPoll = intent.getIntExtra(EXTRA_MINUTES_SINCE_POLL, 0)
+        
         val initialSnoozeMinutes = loadSnoozeMinutes()
 
         setContent {
             GlucoGuardTheme {
                 AlarmScreen(
+                    alarmType = alarmType,
                     glucoseValue = glucoseValue,
                     isLow = isLow,
+                    minutesSinceLastPoll = minutesSinceLastPoll,
                     initialSnoozeMinutes = initialSnoozeMinutes,
-                    onDismiss = { dismiss() },
-                    onSnooze = { minutes -> snooze(minutes) }
+                    onDismiss = { dismiss(alarmType == TYPE_NO_DATA) },
+                    onSnooze = { minutes -> snooze(minutes, alarmType == TYPE_NO_DATA) }
                 )
             }
         }
@@ -57,20 +63,35 @@ class AlarmActivity : ComponentActivity() {
         VibrationHelper.stop(applicationContext)
     }
 
-    private fun dismiss() {
-        GlucoseMonitorService.alarmActive.set(false)
+    private fun dismiss(isNoData: Boolean) {
+        val settingsManager = (application as com.glucoguard.app.GlucoGuardApp).settingsManager
+        if (isNoData) {
+            settingsManager.noDataAlarmActive = false
+            GlucoseMonitorService.noDataAlarmActive.set(false)
+        } else {
+            settingsManager.alarmActive = false
+            GlucoseMonitorService.alarmActive.set(false)
+        }
         VibrationHelper.stop(applicationContext)
         finish()
     }
 
-    private fun snooze(minutes: Int) {
+    private fun snooze(minutes: Int, isNoData: Boolean) {
         saveSnoozeMinutes(minutes)
+        val settingsManager = (application as com.glucoguard.app.GlucoGuardApp).settingsManager
         val durationMs = minutes * 60_000L
         sendBroadcast(Intent(GlucoseMonitorService.ACTION_SNOOZE).apply {
             `package` = packageName
             putExtra(GlucoseMonitorService.EXTRA_SNOOZE_MS, durationMs)
+            putExtra(GlucoseMonitorService.EXTRA_IS_NO_DATA_ALARM, isNoData)
         })
-        GlucoseMonitorService.alarmActive.set(false)
+        if (isNoData) {
+            settingsManager.noDataAlarmActive = false
+            GlucoseMonitorService.noDataAlarmActive.set(false)
+        } else {
+            settingsManager.alarmActive = false
+            GlucoseMonitorService.alarmActive.set(false)
+        }
         VibrationHelper.stop(applicationContext)
         finish()
     }
@@ -90,8 +111,14 @@ class AlarmActivity : ComponentActivity() {
         private const val TAG = "AlarmActivity"
         private const val PREFS_NAME = "glucoguard"
         private const val KEY_SNOOZE_MINUTES = "snooze_minutes"
+        
+        const val TYPE_GLUCOSE = 0
+        const val TYPE_NO_DATA = 1
+        
+        const val EXTRA_ALARM_TYPE = "alarm_type"
         const val EXTRA_GLUCOSE_VALUE = "glucose_value"
         const val EXTRA_IS_LOW = "is_low"
+        const val EXTRA_MINUTES_SINCE_POLL = "minutes_since_poll"
     }
 }
 
@@ -107,14 +134,14 @@ private val ColorBtnText     = Color(0xFFEBEBF5) // off-white for contrast on da
 
 @Composable
 fun AlarmScreen(
+    alarmType: Int,
     glucoseValue: Int,
     isLow: Boolean,
+    minutesSinceLastPoll: Int,
     initialSnoozeMinutes: Int,
     onDismiss: () -> Unit,
     onSnooze: (Int) -> Unit
 ) {
-    val valueColor = if (isLow) ColorLow else ColorHigh
-    val label = if (isLow) stringResource(R.string.label_low) else stringResource(R.string.label_high)
     var snoozeMinutes by remember { mutableIntStateOf(initialSnoozeMinutes) }
 
     Box(
@@ -125,26 +152,48 @@ fun AlarmScreen(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = 12.dp)
         ) {
-            Text(
-                text = label,
-                fontSize = 13.sp,
-                color = valueColor,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 1.5.sp
-            )
-            Text(
-                text = "$glucoseValue",
-                fontSize = 48.sp,
-                color = valueColor,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = stringResource(R.string.unit_mgdl),
-                fontSize = 12.sp,
-                color = ColorUnit
-            )
+            if (alarmType == AlarmActivity.TYPE_GLUCOSE) {
+                val valueColor = if (isLow) ColorLow else ColorHigh
+                val label = if (isLow) stringResource(R.string.label_low) else stringResource(R.string.label_high)
+                
+                Text(
+                    text = label,
+                    fontSize = 13.sp,
+                    color = valueColor,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.5.sp
+                )
+                Text(
+                    text = "$glucoseValue",
+                    fontSize = 48.sp,
+                    color = valueColor,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(R.string.unit_mgdl),
+                    fontSize = 12.sp,
+                    color = ColorUnit
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.alarm_no_data_title),
+                    fontSize = 14.sp,
+                    color = ColorHigh,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.alarm_no_data_text, minutesSinceLastPoll),
+                    fontSize = 11.sp,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 14.sp
+                )
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
