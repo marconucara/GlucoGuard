@@ -30,6 +30,8 @@ class GlucoseMonitorService : Service() {
     private lateinit var wakeLock: PowerManager.WakeLock
     private val handler = Handler(Looper.getMainLooper())
 
+    private val settingsManager by lazy { (application as GlucoGuardApp).settingsManager }
+
     // Snooze state: timestamp until which alarms are suppressed (0 = not snoozed)
     var snoozeUntil: Long = 0
 
@@ -44,15 +46,22 @@ class GlucoseMonitorService : Service() {
 
     private val pollRunnable = object : Runnable {
         override fun run() {
-            Thread {
-                try {
-                    val reading = LibreLinkUpClient.fetchGlucose()
-                    Log.d(TAG, "Glucose: ${reading.value} mg/dL, trend: ${reading.trend}")
-                    handleReading(reading)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Poll failed: ${e.javaClass.simpleName}: ${e.message}")
-                }
-            }.start()
+            val email = settingsManager.email
+            val password = settingsManager.password
+
+            if (email.isBlank() || password.isBlank()) {
+                Log.w(TAG, "Polling skipped: Credentials not set")
+            } else {
+                Thread {
+                    try {
+                        val reading = LibreLinkUpClient.fetchGlucose(email, password)
+                        Log.d(TAG, "Glucose: ${reading.value} mg/dL, trend: ${reading.trend}")
+                        handleReading(reading)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Poll failed: ${e.javaClass.simpleName}: ${e.message}")
+                    }
+                }.start()
+            }
             handler.postDelayed(this, Config.POLL_INTERVAL_MS)
         }
     }
@@ -70,8 +79,21 @@ class GlucoseMonitorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-        handler.post(pollRunnable)
+        when (intent?.action) {
+            ACTION_TEST_ALARM -> {
+                triggerAlarm(GlucoseReading(55, 1), true) // Test alarm: Low glucose
+            }
+            ACTION_REFRESH_POLLING -> {
+                Log.d(TAG, "Refresh polling requested")
+                handler.removeCallbacks(pollRunnable)
+                handler.post(pollRunnable)
+            }
+            else -> {
+                startForeground(NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+                handler.removeCallbacks(pollRunnable)
+                handler.post(pollRunnable)
+            }
+        }
         return START_STICKY
     }
 
@@ -86,8 +108,8 @@ class GlucoseMonitorService : Service() {
 
     private fun handleReading(reading: GlucoseReading) {
         val dnd = DndHelper.isDndActive(this)
-        val low = if (dnd) Config.DND_LOW else Config.NORMAL_LOW
-        val high = if (dnd) Config.DND_HIGH else Config.NORMAL_HIGH
+        val low = if (dnd) settingsManager.dndLow else settingsManager.normalLow
+        val high = if (dnd) settingsManager.dndHigh else settingsManager.normalHigh
         val inRange = reading.value in low..high
 
         if (inRange) {
@@ -137,6 +159,8 @@ class GlucoseMonitorService : Service() {
         private const val TAG = "GlucoseMonitorService"
         private const val NOTIFICATION_ID = 1
         const val ACTION_SNOOZE = "com.example.glucoguard.ACTION_SNOOZE"
+        const val ACTION_TEST_ALARM = "com.example.glucoguard.ACTION_TEST_ALARM"
+        const val ACTION_REFRESH_POLLING = "com.example.glucoguard.ACTION_REFRESH_POLLING"
 
         // Shared alarm state — read by MainActivity.onResume() to redirect to AlarmActivity.
         const val EXTRA_SNOOZE_MS = "snooze_ms"

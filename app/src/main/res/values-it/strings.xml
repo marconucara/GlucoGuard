@@ -22,4 +22,19 @@
     <!-- Main screen -->
     <string name="loading">Caricamento\u2026</string>
     <string name="trend_label">Andamento</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Impostazioni</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_thresholds">Soglie</string>
+    <string name="settings_libre_creds">Credenziali LibreLinkUp</string>
+    <string name="settings_email">Email</string>
+    <string name="settings_password">Password</string>
+    <string name="settings_test_conn">Test Connessione</string>
+    <string name="settings_save">Salva</string>
+    <string name="settings_back">Indietro</string>
+    <string name="settings_normal_thresholds">Soglie Normali</string>
+    <string name="settings_dnd_thresholds">Soglie DND</string>
+    <string name="settings_low">Min</string>
+    <string name="settings_high">Max</string>
 </resources>

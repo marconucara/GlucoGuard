@@ -132,22 +132,6 @@ Request `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission and prompt the user to
 ### Step B: Fix Notification Permission
 Investigate why `POST_NOTIFICATIONS` dialog does not appear on Wear OS despite `requestPermissions()` being called. Possible causes: dialog shown before activity is visible, Wear OS handling differences, or Samsung suppressing the dialog. Consider showing an in-app prompt with a button that explicitly calls `requestPermissions()` on user tap rather than automatically at startup.
 
-### Step C: API Client Optimization
-**Token caching**: Keep `token` and `accountIdHash` in memory (or SharedPreferences). On each poll, skip login and use cached token. Only re-login if any API call returns 4xx. This reduces each poll from 3 HTTP calls to 1, improving reliability and reducing battery usage.
-
-**PatientId caching**: Cache `patientId` in SharedPreferences after first successful fetch (it is expected to be stable over time — verify this assumption in practice). Skip the connections call on every poll. Only re-fetch patientId if the graph call fails for any reason. This further reduces steady-state polling to a single HTTP call.
-
-Implementation: refactor `LibreLinkUpClient` to hold state (`cachedToken`, `cachedAccountIdHash`, `cachedPatientId`) and implement retry-with-refresh logic.
-
-### Step D: Settings UI
-Add a settings screen accessible via a gear icon from MainActivity. Split into two sub-screens:
-
-1. **Account settings**: email, password fields + "Test connection" button that runs the 3-step API flow and shows the result.
-2. **Threshold settings**: sliders or +/- pickers for NORMAL_LOW, NORMAL_HIGH, DND_LOW, DND_HIGH. Show current DND state for context.
-
-Add a **"Test alarm"** button (in settings or main screen) that immediately triggers the alarm flow (sets `alarmActive=true`, starts vibration) without waiting for a real out-of-range reading — useful to verify the full flow without manipulating Config.kt.
-
-Persist all settings in SharedPreferences. Remove hardcoded values from `Config.kt` (keep only non-user-facing constants like POLL_INTERVAL_MS).
 
 ### Step E: Persistence & UX Polish
 - **Last known value**: persist latest glucose value + timestamp + trend in SharedPreferences. Show immediately on app open while the next poll is in progress.
