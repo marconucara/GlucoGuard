@@ -1,8 +1,8 @@
-package com.example.glucoguard.util
+package com.glucoguard.app.util
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.example.glucoguard.Config
+import com.glucoguard.app.Config
 
 class SettingsManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("glucoguard_prefs", Context.MODE_PRIVATE)
@@ -30,4 +30,8 @@ class SettingsManager(context: Context) {
     var dndHigh: Int
         get() = prefs.getInt("dnd_high", Config.DEFAULT_DND_HIGH)
         set(value) = prefs.edit().putInt("dnd_high", value).apply()
+
+    var disclaimerAccepted: Boolean
+        get() = prefs.getBoolean("disclaimer_accepted", false)
+        set(value) = prefs.edit().putBoolean("disclaimer_accepted", value).apply()
 }

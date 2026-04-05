@@ -1,4 +1,4 @@
-package com.example.glucoguard.util
+package com.glucoguard.app.util
 
 import android.app.NotificationManager
 import android.content.Context

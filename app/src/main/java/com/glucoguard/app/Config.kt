@@ -1,4 +1,4 @@
-package com.example.glucoguard
+package com.glucoguard.app
 
 object Config {
     const val BASE_URL = "https://api-eu.libreview.io"

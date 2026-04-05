@@ -1,4 +1,4 @@
-package com.example.glucoguard.presentation
+package com.glucoguard.app.presentation
 
 import android.content.Intent
 import android.os.Bundle
@@ -28,10 +28,10 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.*
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import com.example.glucoguard.GlucoGuardApp
-import com.example.glucoguard.R
-import com.example.glucoguard.api.LibreLinkUpClient
-import com.example.glucoguard.service.GlucoseMonitorService
+import com.glucoguard.app.GlucoGuardApp
+import com.glucoguard.app.R
+import com.glucoguard.app.api.LibreLinkUpClient
+import com.glucoguard.app.service.GlucoseMonitorService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -95,7 +95,7 @@ fun MainSettingsScreen(onAccountClick: () -> Unit, onThresholdsClick: () -> Unit
 }
 
 @Composable
-fun AccountSettingsScreen(settingsManager: com.example.glucoguard.util.SettingsManager, onBack: () -> Unit) {
+fun AccountSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsManager, onBack: () -> Unit) {
     var email by remember { mutableStateOf(settingsManager.email) }
     var password by remember { mutableStateOf(settingsManager.password) }
     
@@ -253,7 +253,7 @@ fun AccountSettingsScreen(settingsManager: com.example.glucoguard.util.SettingsM
 }
 
 @Composable
-fun ThresholdSettingsScreen(settingsManager: com.example.glucoguard.util.SettingsManager, onBack: () -> Unit) {
+fun ThresholdSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsManager, onBack: () -> Unit) {
     var nLow by remember { mutableStateOf(settingsManager.normalLow.toString()) }
     var nHigh by remember { mutableStateOf(settingsManager.normalHigh.toString()) }
     var dLow by remember { mutableStateOf(settingsManager.dndLow.toString()) }

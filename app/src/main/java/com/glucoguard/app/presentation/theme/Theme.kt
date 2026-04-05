@@ -1,4 +1,4 @@
-package com.example.glucoguard.presentation.theme
+package com.glucoguard.app.presentation.theme
 
 import androidx.compose.runtime.Composable
 import androidx.wear.compose.material3.MaterialTheme

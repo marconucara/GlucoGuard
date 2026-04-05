@@ -1,7 +1,7 @@
-package com.example.glucoguard.api
+package com.glucoguard.app.api
 
 import android.util.Log
-import com.example.glucoguard.Config
+import com.glucoguard.app.Config
 import com.google.gson.Gson
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
