@@ -1,4 +1,4 @@
-package com.example.glucoguard.alarm
+package com.glucoguard.app.alarm
 
 import android.content.Context
 import android.content.Intent
@@ -20,10 +20,10 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Text
-import com.example.glucoguard.Config
-import com.example.glucoguard.R
-import com.example.glucoguard.presentation.theme.GlucoGuardTheme
-import com.example.glucoguard.service.GlucoseMonitorService
+import com.glucoguard.app.Config
+import com.glucoguard.app.R
+import com.glucoguard.app.presentation.theme.GlucoGuardTheme
+import com.glucoguard.app.service.GlucoseMonitorService
 
 class AlarmActivity : ComponentActivity() {
 

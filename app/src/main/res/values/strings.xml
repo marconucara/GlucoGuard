@@ -39,4 +39,9 @@
     <string name="settings_dnd_thresholds">DND Thresholds</string>
     <string name="settings_low">Low</string>
     <string name="settings_high">High</string>
+
+    <!-- Disclaimer -->
+    <string name="disclaimer_title">Medical Disclaimer</string>
+    <string name="disclaimer_text">This app is a third-party tool and is NOT an official Abbott product. \n\nIt is NOT intended for medical diagnosis or treatment decisions. Always verify your glucose levels with a blood glucose meter before taking any medical action. \n\nBy continuing, you accept that the author is not responsible for any issues arising from the use of this app.</string>
+    <string name="disclaimer_accept">I Accept</string>
 </resources>

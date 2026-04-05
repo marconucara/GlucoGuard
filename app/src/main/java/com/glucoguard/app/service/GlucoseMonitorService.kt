@@ -1,4 +1,4 @@
-package com.example.glucoguard.service
+package com.glucoguard.app.service
 
 import android.app.Notification
 import android.app.PendingIntent
@@ -15,14 +15,14 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.example.glucoguard.Config
-import com.example.glucoguard.GlucoGuardApp
-import com.example.glucoguard.R
-import com.example.glucoguard.alarm.VibrationHelper
-import com.example.glucoguard.api.GlucoseReading
-import com.example.glucoguard.api.LibreLinkUpClient
-import com.example.glucoguard.presentation.MainActivity
-import com.example.glucoguard.util.DndHelper
+import com.glucoguard.app.Config
+import com.glucoguard.app.GlucoGuardApp
+import com.glucoguard.app.R
+import com.glucoguard.app.alarm.VibrationHelper
+import com.glucoguard.app.api.GlucoseReading
+import com.glucoguard.app.api.LibreLinkUpClient
+import com.glucoguard.app.presentation.MainActivity
+import com.glucoguard.app.util.DndHelper
 import java.util.concurrent.atomic.AtomicBoolean
 
 class GlucoseMonitorService : Service() {
@@ -158,9 +158,9 @@ class GlucoseMonitorService : Service() {
     companion object {
         private const val TAG = "GlucoseMonitorService"
         private const val NOTIFICATION_ID = 1
-        const val ACTION_SNOOZE = "com.example.glucoguard.ACTION_SNOOZE"
-        const val ACTION_TEST_ALARM = "com.example.glucoguard.ACTION_TEST_ALARM"
-        const val ACTION_REFRESH_POLLING = "com.example.glucoguard.ACTION_REFRESH_POLLING"
+        const val ACTION_SNOOZE = "com.glucoguard.app.ACTION_SNOOZE"
+        const val ACTION_TEST_ALARM = "com.glucoguard.app.ACTION_TEST_ALARM"
+        const val ACTION_REFRESH_POLLING = "com.glucoguard.app.ACTION_REFRESH_POLLING"
 
         // Shared alarm state — read by MainActivity.onResume() to redirect to AlarmActivity.
         const val EXTRA_SNOOZE_MS = "snooze_ms"

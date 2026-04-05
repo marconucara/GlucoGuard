@@ -1,11 +1,11 @@
-package com.example.glucoguard
+package com.glucoguard.app
 
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import com.example.glucoguard.R
+import com.glucoguard.app.R
 
-import com.example.glucoguard.util.SettingsManager
+import com.glucoguard.app.util.SettingsManager
 
 class GlucoGuardApp : Application() {
 

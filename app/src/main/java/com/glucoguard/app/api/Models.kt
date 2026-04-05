@@ -1,4 +1,4 @@
-package com.example.glucoguard.api
+package com.glucoguard.app.api
 
 // Step 1 - Login response
 data class LoginResponse(val data: LoginData?)

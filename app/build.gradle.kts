@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.glucoguard"
+    namespace = "com.glucoguard.app"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -12,7 +12,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.glucoguard"
+        applicationId = "com.glucoguard.app"
         minSdk = 30
         targetSdk = 36
         versionCode = 1

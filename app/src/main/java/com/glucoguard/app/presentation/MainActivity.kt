@@ -1,4 +1,4 @@
-package com.example.glucoguard.presentation
+package com.glucoguard.app.presentation
 
 import android.Manifest
 import android.content.Intent
@@ -24,14 +24,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.compose.ui.res.stringResource
+import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
+import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.*
-import com.example.glucoguard.GlucoGuardApp
-import com.example.glucoguard.R
-import com.example.glucoguard.alarm.AlarmActivity
-import com.example.glucoguard.api.GlucoseReading
-import com.example.glucoguard.api.LibreLinkUpClient
-import com.example.glucoguard.presentation.theme.GlucoGuardTheme
-import com.example.glucoguard.service.GlucoseMonitorService
+import com.glucoguard.app.GlucoGuardApp
+import com.glucoguard.app.R
+import com.glucoguard.app.alarm.AlarmActivity
+import com.glucoguard.app.api.GlucoseReading
+import com.glucoguard.app.api.LibreLinkUpClient
+import com.glucoguard.app.presentation.theme.GlucoGuardTheme
+import com.glucoguard.app.service.GlucoseMonitorService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -52,10 +55,20 @@ class MainActivity : ComponentActivity() {
 
         ContextCompat.startForegroundService(this, Intent(this, GlucoseMonitorService::class.java))
         setContent {
+            val settingsManager = (applicationContext as GlucoGuardApp).settingsManager
+            var isDisclaimerAccepted by remember { mutableStateOf(settingsManager.disclaimerAccepted) }
+
             GlucoGuardTheme {
-                MainGlucoseScreen(
-                    onSettingsClick = { startActivity(Intent(this, SettingsActivity::class.java)) }
-                )
+                if (!isDisclaimerAccepted) {
+                    DisclaimerScreen(onAccept = {
+                        settingsManager.disclaimerAccepted = true
+                        isDisclaimerAccepted = true
+                    })
+                } else {
+                    MainGlucoseScreen(
+                        onSettingsClick = { startActivity(Intent(this, SettingsActivity::class.java)) }
+                    )
+                }
             }
         }
     }
@@ -68,6 +81,45 @@ class MainActivity : ComponentActivity() {
                 putExtra(AlarmActivity.EXTRA_IS_LOW, GlucoseMonitorService.lastAlarmIsLow)
             }
             startActivity(intent)
+        }
+    }
+}
+
+@Composable
+fun DisclaimerScreen(onAccept: () -> Unit) {
+    val listState = rememberScalingLazyListState()
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        ScalingLazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp)
+        ) {
+            item {
+                Text(
+                    text = stringResource(R.string.disclaimer_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
+            }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item {
+                Text(
+                    text = stringResource(R.string.disclaimer_text),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
+            }
+            item { Spacer(modifier = Modifier.height(12.dp)) }
+            item {
+                Button(
+                    onClick = onAccept,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.disclaimer_accept))
+                }
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.glucoguard.alarm
+package com.glucoguard.app.alarm
 
 import android.content.Context
 import android.os.VibrationEffect

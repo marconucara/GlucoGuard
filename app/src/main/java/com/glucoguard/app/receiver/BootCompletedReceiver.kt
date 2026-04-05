@@ -1,10 +1,10 @@
-package com.example.glucoguard.receiver
+package com.glucoguard.app.receiver
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
-import com.example.glucoguard.service.GlucoseMonitorService
+import com.glucoguard.app.service.GlucoseMonitorService
 
 class BootCompletedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
