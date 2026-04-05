@@ -32,15 +32,23 @@ class GlucoseMonitorService : Service() {
 
     private val settingsManager by lazy { (application as GlucoGuardApp).settingsManager }
 
-    // Snooze state: timestamp until which alarms are suppressed (0 = not snoozed)
-    var snoozeUntil: Long = 0
-
     private val snoozeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val durationMs = intent.getLongExtra(EXTRA_SNOOZE_MS, Config.SNOOZE_DURATION_MS)
-            snoozeUntil = System.currentTimeMillis() + durationMs
-            alarmActive.set(false)
-            Log.d(TAG, "Snoozed for ${durationMs / 60_000}m until $snoozeUntil")
+            val isNoData = intent.getBooleanExtra(EXTRA_IS_NO_DATA_ALARM, false)
+            
+            if (isNoData) {
+                settingsManager.noDataSnoozeUntil = System.currentTimeMillis() + durationMs
+                settingsManager.noDataAlarmActive = false
+                noDataAlarmActive.set(false)
+            } else {
+                settingsManager.glucoseSnoozeUntil = System.currentTimeMillis() + durationMs
+                settingsManager.alarmActive = false
+                alarmActive.set(false)
+            }
+            
+            VibrationHelper.stop(applicationContext)
+            Log.d(TAG, "Snoozed (${if(isNoData) "NoData" else "Glucose"}) for ${durationMs / 60_000}m")
         }
     }
 
@@ -55,10 +63,12 @@ class GlucoseMonitorService : Service() {
                 Thread {
                     try {
                         val reading = LibreLinkUpClient.fetchGlucose(email, password)
+                        settingsManager.lastSuccessfulPollTimestamp = System.currentTimeMillis()
                         Log.d(TAG, "Glucose: ${reading.value} mg/dL, trend: ${reading.trendToArrow()}")
                         handleReading(reading)
                     } catch (e: Exception) {
                         Log.e(TAG, "Poll failed: ${e.javaClass.simpleName}: ${e.message}")
+                        checkNoDataAlarm()
                     }
                 }.start()
             }
@@ -76,6 +86,16 @@ class GlucoseMonitorService : Service() {
             IntentFilter(ACTION_SNOOZE),
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
+
+        // Resume state from persistent storage
+        alarmActive.set(settingsManager.alarmActive)
+        noDataAlarmActive.set(settingsManager.noDataAlarmActive)
+        lastAlarmValue = settingsManager.lastAlarmValue
+        lastAlarmIsLow = settingsManager.lastAlarmIsLow
+        
+        if (alarmActive.get() || noDataAlarmActive.get()) {
+            VibrationHelper.start(applicationContext)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -114,7 +134,13 @@ class GlucoseMonitorService : Service() {
 
         if (inRange) {
             if (alarmActive.getAndSet(false)) {
+                settingsManager.alarmActive = false
                 Log.d(TAG, "Glucose back in range — alarm cleared")
+                VibrationHelper.stop(applicationContext)
+            }
+            // Clear no-data alarm if we got a successful reading
+            if (noDataAlarmActive.getAndSet(false)) {
+                settingsManager.noDataAlarmActive = false
                 VibrationHelper.stop(applicationContext)
             }
             return
@@ -122,7 +148,7 @@ class GlucoseMonitorService : Service() {
 
         // Out of range: check snooze
         val now = System.currentTimeMillis()
-        if (now < snoozeUntil) {
+        if (now < settingsManager.glucoseSnoozeUntil) {
             Log.d(TAG, "Out of range (${reading.value}) but snoozed — skipping alarm")
             return
         }
@@ -132,11 +158,43 @@ class GlucoseMonitorService : Service() {
         triggerAlarm(reading, isLow)
     }
 
+    private fun checkNoDataAlarm() {
+        val lastPoll = settingsManager.lastSuccessfulPollTimestamp
+        if (lastPoll == 0L) return // Haven't had a single success yet
+
+        val minutesSinceLastPoll = (System.currentTimeMillis() - lastPoll) / 60_000
+        val threshold = settingsManager.noDataThresholdMin
+
+        if (minutesSinceLastPoll >= threshold) {
+            val now = System.currentTimeMillis()
+            if (now < settingsManager.noDataSnoozeUntil) {
+                Log.d(TAG, "No data ($minutesSinceLastPoll min) but snoozed — skipping alarm")
+                return
+            }
+            
+            Log.w(TAG, "ALARM: No data for $minutesSinceLastPoll minutes (threshold: $threshold)")
+            triggerNoDataAlarm()
+        }
+    }
+
     private fun triggerAlarm(reading: GlucoseReading, isLow: Boolean) {
         alarmActive.set(true)
         lastAlarmValue = reading.value
         lastAlarmIsLow = isLow
-        Log.w(TAG, "triggerAlarm() — vibrating, waiting for user to open app")
+        
+        settingsManager.alarmActive = true
+        settingsManager.lastAlarmValue = reading.value
+        settingsManager.lastAlarmIsLow = isLow
+        
+        Log.w(TAG, "triggerAlarm() — vibrating")
+        VibrationHelper.start(applicationContext)
+    }
+
+    private fun triggerNoDataAlarm() {
+        noDataAlarmActive.set(true)
+        settingsManager.noDataAlarmActive = true
+        
+        Log.w(TAG, "triggerNoDataAlarm() — vibrating")
         VibrationHelper.start(applicationContext)
     }
 
@@ -162,9 +220,12 @@ class GlucoseMonitorService : Service() {
         const val ACTION_TEST_ALARM = "com.glucoguard.app.ACTION_TEST_ALARM"
         const val ACTION_REFRESH_POLLING = "com.glucoguard.app.ACTION_REFRESH_POLLING"
 
-        // Shared alarm state — read by MainActivity.onResume() to redirect to AlarmActivity.
         const val EXTRA_SNOOZE_MS = "snooze_ms"
+        const val EXTRA_IS_NO_DATA_ALARM = "is_no_data"
+        
         val alarmActive = AtomicBoolean(false)
+        val noDataAlarmActive = AtomicBoolean(false)
+
         @Volatile var lastAlarmValue: Int = 0
         @Volatile var lastAlarmIsLow: Boolean = false
     }

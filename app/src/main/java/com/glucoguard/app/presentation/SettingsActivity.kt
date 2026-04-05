@@ -258,6 +258,7 @@ fun ThresholdSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsMan
     var nHigh by remember { mutableStateOf(settingsManager.normalHigh.toString()) }
     var dLow by remember { mutableStateOf(settingsManager.dndLow.toString()) }
     var dHigh by remember { mutableStateOf(settingsManager.dndHigh.toString()) }
+    var noDataThreshold by remember { mutableStateOf(settingsManager.noDataThresholdMin.toString()) }
     
     ScalingLazyColumn(
         state = rememberScalingLazyListState(),
@@ -265,14 +266,18 @@ fun ThresholdSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsMan
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         item { Text(stringResource(R.string.settings_normal_thresholds), style = MaterialTheme.typography.titleSmall) }
-        item { ThresholdInput(stringResource(R.string.settings_low), nLow) { nLow = it } }
-        item { ThresholdInput(stringResource(R.string.settings_high), nHigh) { nHigh = it } }
+        item { ThresholdInput(stringResource(R.string.settings_low), nLow, "mg/dL") { nLow = it } }
+        item { ThresholdInput(stringResource(R.string.settings_high), nHigh, "mg/dL") { nHigh = it } }
         
         item { Spacer(modifier = Modifier.height(8.dp)) }
         item { Text(stringResource(R.string.settings_dnd_thresholds), style = MaterialTheme.typography.titleSmall) }
-        item { ThresholdInput(stringResource(R.string.settings_low), dLow) { dLow = it } }
-        item { ThresholdInput(stringResource(R.string.settings_high), dHigh) { dHigh = it } }
+        item { ThresholdInput(stringResource(R.string.settings_low), dLow, "mg/dL") { dLow = it } }
+        item { ThresholdInput(stringResource(R.string.settings_high), dHigh, "mg/dL") { dHigh = it } }
         
+        item { Spacer(modifier = Modifier.height(8.dp)) }
+        item { Text("Safety", style = MaterialTheme.typography.titleSmall) }
+        item { ThresholdInput(stringResource(R.string.settings_no_data_threshold), noDataThreshold, "min") { noDataThreshold = it } }
+
         item {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 FilledTonalButton(onClick = onBack, modifier = Modifier.weight(1f)) {
@@ -283,12 +288,14 @@ fun ThresholdSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsMan
                     val nh = nHigh.toIntOrNull() ?: settingsManager.normalHigh
                     val dl = dLow.toIntOrNull() ?: settingsManager.dndLow
                     val dh = dHigh.toIntOrNull() ?: settingsManager.dndHigh
+                    val ndt = noDataThreshold.toIntOrNull() ?: settingsManager.noDataThresholdMin
                     
-                    Log.i("SettingsActivity", "Saving thresholds: N[$nl-$nh], DND[$dl-$dh]")
+                    Log.i("SettingsActivity", "Saving thresholds: N[$nl-$nh], DND[$dl-$dh], NoData: $ndt")
                     settingsManager.normalLow = nl
                     settingsManager.normalHigh = nh
                     settingsManager.dndLow = dl
                     settingsManager.dndHigh = dh
+                    settingsManager.noDataThresholdMin = ndt
                     
                     onBack()
                 }, modifier = Modifier.weight(1f)) {
@@ -300,21 +307,27 @@ fun ThresholdSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsMan
 }
 
 @Composable
-fun ThresholdInput(label: String, value: String, onValueChange: (String) -> Unit) {
+fun ThresholdInput(label: String, value: String, unit: String = "", onValueChange: (String) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp)) {
         Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
-        BasicTextField(
-            value = value,
-            onValueChange = { if (it.all { c -> c.isDigit() }) onValueChange(it) },
-            singleLine = true,
-            maxLines = 1,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
-            cursorBrush = SolidColor(Color.White),
-            textStyle = TextStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center),
-            modifier = Modifier
-                .width(60.dp)
-                .background(Color(0xFF202020), RoundedCornerShape(8.dp))
-                .padding(6.dp)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            BasicTextField(
+                value = value,
+                onValueChange = { if (it.all { c -> c.isDigit() }) onValueChange(it) },
+                singleLine = true,
+                maxLines = 1,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                cursorBrush = SolidColor(Color.White),
+                textStyle = TextStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center),
+                modifier = Modifier
+                    .width(44.dp)
+                    .background(Color(0xFF202020), RoundedCornerShape(8.dp))
+                    .padding(6.dp)
+            )
+            if (unit.isNotEmpty()) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(unit, fontSize = 10.sp, color = Color.Gray)
+            }
+        }
     }
 }

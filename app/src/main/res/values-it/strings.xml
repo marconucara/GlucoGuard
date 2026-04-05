@@ -37,6 +37,7 @@
     <string name="settings_dnd_thresholds">Soglie DND</string>
     <string name="settings_low">Min</string>
     <string name="settings_high">Max</string>
+    <string name="settings_no_data_threshold">Allarme Assenza Dati (min)</string>
 
     <!-- Disclaimer -->
     <string name="disclaimer_title">Disclaimer Medico</string>
