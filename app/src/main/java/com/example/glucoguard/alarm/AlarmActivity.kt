@@ -146,50 +146,68 @@ fun AlarmScreen(
                 color = ColorUnit
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Snooze duration picker
+            // Action Buttons
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(
-                    onClick = { if (snoozeMinutes > 1) snoozeMinutes-- },
-                    modifier = Modifier.size(30.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ColorBtnPicker, contentColor = ColorBtnText)
-                ) {
-                    Text("−", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
-                Text(
-                    text = "${snoozeMinutes}m",
-                    fontSize = 15.sp,
-                    color = Color.White,
-                    modifier = Modifier.widthIn(min = 38.dp),
-                    textAlign = TextAlign.Center
-                )
-                Button(
-                    onClick = { if (snoozeMinutes < 120) snoozeMinutes++ },
-                    modifier = Modifier.size(30.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ColorBtnPicker, contentColor = ColorBtnText)
-                ) {
-                    Text("+", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Dismiss Button
                 Button(
                     onClick = onDismiss,
+                    modifier = Modifier.height(36.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ColorBtnDismiss, contentColor = ColorBtnText)
                 ) {
                     Text(stringResource(R.string.btn_dismiss), fontSize = 13.sp)
                 }
-                Button(
-                    onClick = { onSnooze(snoozeMinutes) },
-                    colors = ButtonDefaults.buttonColors(containerColor = ColorBtnSnooze)
-                ) {
-                    Text(stringResource(R.string.btn_snooze), fontSize = 13.sp)
+
+                // Snooze Section (Vertical: +/- controls above Snooze button)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Controls (Row)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Button(
+                            onClick = { if (snoozeMinutes > 1) snoozeMinutes-- },
+                            modifier = Modifier.size(26.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = ColorBtnPicker, contentColor = ColorBtnText)
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("-", fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                            }
+                        }
+                        
+                        Text(
+                            text = "${snoozeMinutes}m",
+                            fontSize = 12.sp,
+                            color = Color.White,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Button(
+                            onClick = { snoozeMinutes++ },
+                            modifier = Modifier.size(26.dp),
+                            contentPadding = PaddingValues(0.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = ColorBtnPicker, contentColor = ColorBtnText)
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text("+", fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    Button(
+                        onClick = { onSnooze(snoozeMinutes) },
+                        modifier = Modifier.height(36.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = ColorBtnSnooze)
+                    ) {
+                        Text(stringResource(R.string.btn_snooze), fontSize = 13.sp)
+                    }
                 }
             }
         }
