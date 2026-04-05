@@ -55,7 +55,7 @@ class GlucoseMonitorService : Service() {
                 Thread {
                     try {
                         val reading = LibreLinkUpClient.fetchGlucose(email, password)
-                        Log.d(TAG, "Glucose: ${reading.value} mg/dL, trend: ${reading.trend}")
+                        Log.d(TAG, "Glucose: ${reading.value} mg/dL, trend: ${reading.trendToArrow()}")
                         handleReading(reading)
                     } catch (e: Exception) {
                         Log.e(TAG, "Poll failed: ${e.javaClass.simpleName}: ${e.message}")

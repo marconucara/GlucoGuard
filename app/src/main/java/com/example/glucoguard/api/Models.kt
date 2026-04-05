@@ -17,4 +17,13 @@ data class ConnectionData(val glucoseMeasurement: GlucoseMeasurement?)
 data class GlucoseMeasurement(val ValueInMgPerDl: Int?, val TrendArrow: Int?)
 
 // Result returned to the rest of the app
-data class GlucoseReading(val value: Int, val trend: Int)
+data class GlucoseReading(val value: Int, val trend: Int) {
+    fun trendToArrow(): String = when (trend) {
+        1 -> "↓"
+        2 -> "↘"
+        3 -> "→"
+        4 -> "↗"
+        5 -> "↑"
+        else -> "→"
+    }
+}

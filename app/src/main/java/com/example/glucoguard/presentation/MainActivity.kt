@@ -28,6 +28,7 @@ import androidx.wear.compose.material3.*
 import com.example.glucoguard.GlucoGuardApp
 import com.example.glucoguard.R
 import com.example.glucoguard.alarm.AlarmActivity
+import com.example.glucoguard.api.GlucoseReading
 import com.example.glucoguard.api.LibreLinkUpClient
 import com.example.glucoguard.presentation.theme.GlucoGuardTheme
 import com.example.glucoguard.service.GlucoseMonitorService
@@ -71,22 +72,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun trendToArrow(trend: Int): String = when (trend) {
-    1 -> "↓"
-    2 -> "↘"
-    3 -> "→"
-    4 -> "↗"
-    5 -> "↑"
-    else -> "→"
-}
-
 @Composable
 fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
     val context = LocalContext.current
     val settingsManager = (context.applicationContext as GlucoGuardApp).settingsManager
     
     var glucoseValue by remember { mutableStateOf<Int?>(null) }
-    var trend by remember { mutableStateOf(3) }
+    var reading by remember { mutableStateOf<GlucoseReading?>(null) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
     var refreshTrigger by remember { mutableStateOf(0) }
@@ -113,11 +105,11 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
             if (email.isNotBlank() && pass.isNotBlank()) {
                 isRefreshing = true
                 try {
-                    val reading = withContext(Dispatchers.IO) { 
+                    val currentReading = withContext(Dispatchers.IO) { 
                         LibreLinkUpClient.fetchGlucose(email, pass) 
                     }
-                    glucoseValue = reading.value
-                    trend = reading.trend
+                    reading = currentReading
+                    glucoseValue = currentReading.value
                     errorMsg = null
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Fetch error: ${e.message}")
@@ -200,7 +192,7 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = trendToArrow(trend),
+                        text = reading?.trendToArrow() ?: "→",
                         fontSize = 24.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
