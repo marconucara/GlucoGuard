@@ -22,7 +22,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -97,13 +96,19 @@ fun MainSettingsScreen(onAccountClick: () -> Unit, onThresholdsClick: () -> Unit
 
 @Composable
 fun AccountSettingsScreen(settingsManager: com.example.glucoguard.util.SettingsManager, onBack: () -> Unit) {
-    var emailState by remember { mutableStateOf(TextFieldValue(settingsManager.email)) }
-    var passwordState by remember { mutableStateOf(TextFieldValue(settingsManager.password)) }
+    var email by remember { mutableStateOf(settingsManager.email) }
+    var password by remember { mutableStateOf(settingsManager.password) }
     
     var testing by remember { mutableStateOf(false) }
+    var testResult by remember { mutableStateOf<Boolean?>(null) } // null = none, true = success, false = fail
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+
+    // Reset test result if user changes credentials
+    LaunchedEffect(email, password) {
+        testResult = null
+    }
 
     ScalingLazyColumn(
         state = rememberScalingLazyListState(),
@@ -116,21 +121,26 @@ fun AccountSettingsScreen(settingsManager: com.example.glucoguard.util.SettingsM
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
                 Text(stringResource(R.string.settings_email), style = MaterialTheme.typography.labelSmall)
                 BasicTextField(
-                    value = emailState,
-                    onValueChange = { emailState = it },
+                    value = email,
+                    onValueChange = { email = it },
+                    singleLine = true,
+                    maxLines = 1,
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
+                        keyboardType = KeyboardType.Email,
+                        autoCorrectEnabled = false,
                         imeAction = ImeAction.Next
                     ),
                     cursorBrush = SolidColor(Color.White),
-                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
+                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Start),
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFF202020), RoundedCornerShape(8.dp))
-                        .padding(10.dp),
+                        .padding(8.dp),
                     decorationBox = { innerTextField ->
-                        if (emailState.text.isEmpty()) Text("email@example.com", color = Color.Gray, fontSize = 12.sp)
-                        innerTextField()
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (email.isEmpty()) Text("email...", color = Color.Gray, fontSize = 12.sp)
+                            innerTextField()
+                        }
                     }
                 )
             }
@@ -140,50 +150,76 @@ fun AccountSettingsScreen(settingsManager: com.example.glucoguard.util.SettingsM
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
                 Text(stringResource(R.string.settings_password), style = MaterialTheme.typography.labelSmall)
                 BasicTextField(
-                    value = passwordState,
-                    onValueChange = { passwordState = it },
+                    value = password,
+                    onValueChange = { password = it },
+                    singleLine = true,
+                    maxLines = 1,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
+                        autoCorrectEnabled = false,
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     cursorBrush = SolidColor(Color.White),
-                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
+                    textStyle = TextStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Start),
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFF202020), RoundedCornerShape(8.dp))
-                        .padding(10.dp),
+                        .padding(8.dp),
                     decorationBox = { innerTextField ->
-                        if (passwordState.text.isEmpty()) Text("password", color = Color.Gray, fontSize = 12.sp)
-                        innerTextField()
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (password.isEmpty()) Text("password", color = Color.Gray, fontSize = 12.sp)
+                            innerTextField()
+                        }
                     }
                 )
             }
         }
 
-        item { Spacer(modifier = Modifier.height(12.dp)) }
+        item { Spacer(modifier = Modifier.height(8.dp)) }
 
         item {
             Button(
                 onClick = {
                     testing = true
+                    testResult = null
                     focusManager.clearFocus()
                     scope.launch {
-                        withContext(Dispatchers.IO) {
+                        testResult = withContext(Dispatchers.IO) {
                             try {
-                                val reading = LibreLinkUpClient.fetchGlucose(emailState.text.trim(), passwordState.text.trim())
+                                val reading = LibreLinkUpClient.fetchGlucose(email.trim(), password.trim())
                                 Log.i("SettingsActivity", "Test connection success: ${reading.value} mg/dL")
+                                true
                             } catch (e: Exception) {
                                 Log.e("SettingsActivity", "Test connection failed: ${e.message}")
+                                false
                             }
                         }
                         testing = false
                     }
                 },
-                enabled = !testing && emailState.text.isNotEmpty() && passwordState.text.isNotEmpty(),
+                enabled = !testing && email.isNotEmpty() && password.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
             ) {
-                Text(if (testing) "..." else stringResource(R.string.settings_test_conn))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (testing) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text(
+                        when {
+                            testing -> "Testing..."
+                            testResult == true -> "Success ✓"
+                            testResult == false -> "Failed ✗"
+                            else -> stringResource(R.string.settings_test_conn)
+                        },
+                        color = when (testResult) {
+                            true -> Color.Green
+                            false -> Color.Red
+                            else -> Color.Unspecified
+                        }
+                    )
+                }
             }
         }
 
@@ -193,17 +229,15 @@ fun AccountSettingsScreen(settingsManager: com.example.glucoguard.util.SettingsM
                     Text(stringResource(R.string.settings_back))
                 }
                 Button(onClick = {
-                    val newEmail = emailState.text.trim()
-                    val newPassword = passwordState.text.trim()
+                    val newEmail = email.trim()
+                    val newPassword = password.trim()
                     
                     Log.i("SettingsActivity", "Saving account settings: email=$newEmail, password=$newPassword")
                     settingsManager.email = newEmail
                     settingsManager.password = newPassword
                     
-                    // Clear API cache to force fresh login with new credentials
                     LibreLinkUpClient.invalidateCache()
                     
-                    // Trigger immediate poll
                     val intent = Intent(context, GlucoseMonitorService::class.java).apply {
                         action = GlucoseMonitorService.ACTION_REFRESH_POLLING
                     }
@@ -220,10 +254,10 @@ fun AccountSettingsScreen(settingsManager: com.example.glucoguard.util.SettingsM
 
 @Composable
 fun ThresholdSettingsScreen(settingsManager: com.example.glucoguard.util.SettingsManager, onBack: () -> Unit) {
-    var nLow by remember { mutableStateOf(TextFieldValue(settingsManager.normalLow.toString())) }
-    var nHigh by remember { mutableStateOf(TextFieldValue(settingsManager.normalHigh.toString())) }
-    var dLow by remember { mutableStateOf(TextFieldValue(settingsManager.dndLow.toString())) }
-    var dHigh by remember { mutableStateOf(TextFieldValue(settingsManager.dndHigh.toString())) }
+    var nLow by remember { mutableStateOf(settingsManager.normalLow.toString()) }
+    var nHigh by remember { mutableStateOf(settingsManager.normalHigh.toString()) }
+    var dLow by remember { mutableStateOf(settingsManager.dndLow.toString()) }
+    var dHigh by remember { mutableStateOf(settingsManager.dndHigh.toString()) }
     
     ScalingLazyColumn(
         state = rememberScalingLazyListState(),
@@ -245,17 +279,17 @@ fun ThresholdSettingsScreen(settingsManager: com.example.glucoguard.util.Setting
                     Text(stringResource(R.string.settings_back))
                 }
                 Button(onClick = {
-                    val nl = nLow.text.toIntOrNull() ?: settingsManager.normalLow
-                    val nh = nHigh.text.toIntOrNull() ?: settingsManager.normalHigh
-                    val dl = dLow.text.toIntOrNull() ?: settingsManager.dndLow
-                    val dh = dHigh.text.toIntOrNull() ?: settingsManager.dndHigh
+                    val nl = nLow.toIntOrNull() ?: settingsManager.normalLow
+                    val nh = nHigh.toIntOrNull() ?: settingsManager.normalHigh
+                    val dl = dLow.toIntOrNull() ?: settingsManager.dndLow
+                    val dh = dHigh.toIntOrNull() ?: settingsManager.dndHigh
                     
                     Log.i("SettingsActivity", "Saving thresholds: N[$nl-$nh], DND[$dl-$dh]")
                     settingsManager.normalLow = nl
                     settingsManager.normalHigh = nh
                     settingsManager.dndLow = dl
                     settingsManager.dndHigh = dh
-
+                    
                     onBack()
                 }, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.settings_save))
@@ -266,12 +300,14 @@ fun ThresholdSettingsScreen(settingsManager: com.example.glucoguard.util.Setting
 }
 
 @Composable
-fun ThresholdInput(label: String, value: TextFieldValue, onValueChange: (TextFieldValue) -> Unit) {
+fun ThresholdInput(label: String, value: String, onValueChange: (String) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp)) {
         Text(label, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
         BasicTextField(
             value = value,
-            onValueChange = { if (it.text.all { c -> c.isDigit() }) onValueChange(it) },
+            onValueChange = { if (it.all { c -> c.isDigit() }) onValueChange(it) },
+            singleLine = true,
+            maxLines = 1,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
             cursorBrush = SolidColor(Color.White),
             textStyle = TextStyle(color = Color.White, fontSize = 14.sp, textAlign = TextAlign.Center),

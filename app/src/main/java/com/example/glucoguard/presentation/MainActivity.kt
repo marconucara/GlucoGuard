@@ -91,7 +91,20 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
     var isRefreshing by remember { mutableStateOf(false) }
     var refreshTrigger by remember { mutableStateOf(0) }
 
-    // Re-check when coming back from settings
+    // Trigger refresh when activity resumes
+    DisposableEffect(context) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                refreshTrigger++
+            }
+        }
+        (context as ComponentActivity).lifecycle.addObserver(observer)
+        onDispose {
+            (context as ComponentActivity).lifecycle.removeObserver(observer)
+        }
+    }
+
+    // Initial fetch and auto-refresh
     LaunchedEffect(refreshTrigger) {
         while(true) {
             val email = settingsManager.email
@@ -127,14 +140,26 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         // Top Toolbar
-        Box(modifier = Modifier.fillMaxSize().padding(top = 10.dp), contentAlignment = Alignment.TopCenter) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onSettingsClick, modifier = Modifier.size(32.dp)) {
-                    Text("⚙", fontSize = 18.sp)
-                }
-                if (isRefreshing) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp).padding(start = 8.dp), strokeWidth = 2.dp)
-                }
+        Box(modifier = Modifier.fillMaxSize().padding(top = 8.dp), contentAlignment = Alignment.TopCenter) {
+            FilledIconButton(
+                onClick = onSettingsClick,
+                modifier = Modifier.size(36.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = Color(0xFF2C2C2C),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("⚙", fontSize = 18.sp)
+            }
+        }
+
+        // Bottom Loader (semi-transparent, fixed position)
+        if (isRefreshing) {
+            Box(modifier = Modifier.fillMaxSize().padding(bottom = 12.dp), contentAlignment = Alignment.BottomCenter) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp).alpha(0.6f),
+                    strokeWidth = 2.dp
+                )
             }
         }
 
