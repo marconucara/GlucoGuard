@@ -58,13 +58,22 @@ app/src/main/java/com/glucoguard/app/
 
 ## To-Do for Store Release
 
-### Technical
-- [x] **Battery Optimization Prompt**: Implement `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` request.
-- [ ] **Ongoing Activity**: Support `androidx.wear.ongoing` for persistent launcher icon.
+### Blockers
 
-### Legal/Store
+- [ ] **EncryptedSharedPreferences**: Password is stored in plaintext. Replace `getSharedPreferences` in `SettingsManager` with `EncryptedSharedPreferences` (AndroidX Security Crypto). Drop-in replacement, zero UX impact, effectively required by Play policy for credentials.
+- [ ] **Store Description**: Clarify this is an unofficial third-party app, not an Abbott product, not for medical use. Include privacy policy URL.
+
+### Quality / Reliability
+
+- [ ] **Stale data warning**: If the last successful poll is older than ~10 minutes, gray out the glucose value in `MainActivity` and show a visual indicator (e.g. "⚠ data outdated"). Requires saving the last successful poll timestamp in SharedPreferences (survives service restart).
+- [ ] **Persist `alarmActive` state**: The flag lives in the companion object — if the service is killed and restarted (OOM, boot), state is lost and an active alarm is never detected after restart. Save `alarmActive` + `lastAlarmValue` + `lastAlarmIsLow` to SharedPreferences, restore in service `onCreate()`.
+- [ ] **WakeLock timeout**: `wakeLock.acquire()` without a timeout is bad practice — if the service crashes the lock stays held. Use `acquire(10 * 60 * 1000L)` as a safety upper bound.
+- [ ] **Ongoing Activity** (`androidx.wear.ongoing`): Surface current glucose value on the watch launcher screen without requiring a full watchface. Useful for quick glances.
+
+### Legal / Store
+
 - [x] **Privacy Policy**: Created `privacy.html` for GitHub Pages.
-- [ ] **Store Description**: Clarify this is a third-party companion app for LibreLinkUp; NOT for medical diagnosis.
+- [ ] **Store screenshots**: At least 1 screenshot per main screen (main, alarm, settings).
 
 ## Completed
 - [x] Package name changed to `com.glucoguard.app`.
