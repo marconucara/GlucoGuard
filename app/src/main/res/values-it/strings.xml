@@ -42,4 +42,9 @@
     <string name="disclaimer_title">Disclaimer Medico</string>
     <string name="disclaimer_text">Questa app è uno strumento di terze parti e NON è un prodotto ufficiale Abbott. \n\nNON è destinata alla diagnosi medica o a decisioni terapeutiche. Verifica sempre i tuoi livelli di glucosio con un glucometro prima di intraprendere qualsiasi azione medica. \n\nContinuando, accetti che l\'autore non è responsabile per eventuali problemi derivanti dall\'uso di questa app.</string>
     <string name="disclaimer_accept">Accetto</string>
+
+    <!-- Battery Optimization -->
+    <string name="battery_opt_title">Ottimizzazione Batteria</string>
+    <string name="battery_opt_text">Per garantire il monitoraggio 24/7 e allarmi affidabili, GlucoGuard deve essere escluso dalle ottimizzazioni batteria. \n\nPer favore, consenti l\'esclusione nella schermata successiva.</string>
+    <string name="battery_opt_button">Configura</string>
 </resources>

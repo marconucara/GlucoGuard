@@ -1,10 +1,14 @@
 package com.glucoguard.app.presentation
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -57,17 +61,35 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settingsManager = (applicationContext as GlucoGuardApp).settingsManager
             var isDisclaimerAccepted by remember { mutableStateOf(settingsManager.disclaimerAccepted) }
+            
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            var isBatteryOptIgnored by remember { 
+                mutableStateOf(powerManager.isIgnoringBatteryOptimizations(packageName)) 
+            }
 
             GlucoGuardTheme {
-                if (!isDisclaimerAccepted) {
-                    DisclaimerScreen(onAccept = {
-                        settingsManager.disclaimerAccepted = true
-                        isDisclaimerAccepted = true
-                    })
-                } else {
-                    MainGlucoseScreen(
-                        onSettingsClick = { startActivity(Intent(this, SettingsActivity::class.java)) }
-                    )
+                when {
+                    !isDisclaimerAccepted -> {
+                        DisclaimerScreen(onAccept = {
+                            settingsManager.disclaimerAccepted = true
+                            isDisclaimerAccepted = true
+                        })
+                    }
+                    !isBatteryOptIgnored -> {
+                        BatteryOptimizationScreen(onConfigure = {
+                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                data = Uri.parse("package:$packageName")
+                            }
+                            startActivity(intent)
+                        }, onRefresh = {
+                            isBatteryOptIgnored = powerManager.isIgnoringBatteryOptimizations(packageName)
+                        })
+                    }
+                    else -> {
+                        MainGlucoseScreen(
+                            onSettingsClick = { startActivity(Intent(this, SettingsActivity::class.java)) }
+                        )
+                    }
                 }
             }
         }
@@ -118,6 +140,51 @@ fun DisclaimerScreen(onAccept: () -> Unit) {
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(stringResource(R.string.disclaimer_accept))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BatteryOptimizationScreen(onConfigure: () -> Unit, onRefresh: () -> Unit) {
+    val listState = rememberScalingLazyListState()
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        ScalingLazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp)
+        ) {
+            item {
+                Text(
+                    text = stringResource(R.string.battery_opt_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
+            }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item {
+                Text(
+                    text = stringResource(R.string.battery_opt_text),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
+            }
+            item { Spacer(modifier = Modifier.height(12.dp)) }
+            item {
+                Button(
+                    onClick = onConfigure,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.battery_opt_button))
+                }
+            }
+            item { Spacer(modifier = Modifier.height(4.dp)) }
+            item {
+                TextButton(onClick = onRefresh) {
+                    Text("Check again", fontSize = 12.sp)
                 }
             }
         }

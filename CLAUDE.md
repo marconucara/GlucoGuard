@@ -59,7 +59,7 @@ app/src/main/java/com/glucoguard/app/
 ## To-Do for Store Release
 
 ### Technical
-- [ ] **Battery Optimization Prompt**: Implement `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` request.
+- [x] **Battery Optimization Prompt**: Implement `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` request.
 - [ ] **Ongoing Activity**: Support `androidx.wear.ongoing` for persistent launcher icon.
 
 ### Legal/Store
