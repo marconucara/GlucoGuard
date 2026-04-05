@@ -38,27 +38,30 @@ object LibreLinkUpClient {
 
     /** Performs glucose fetch, using cached credentials if available, or logging in if needed. */
     fun fetchGlucose(email: String? = null, password: String? = null): GlucoseReading {
-        // Try with current cache
-        if (cachedToken != null && cachedAccountIdHash != null && cachedPatientId != null) {
-            try {
-                return fetchWithCredentials(cachedToken!!, cachedAccountIdHash!!, cachedPatientId!!)
-            } catch (e: Exception) {
-                Log.w(TAG, "Cached fetch failed, refreshing session: ${e.message}")
-                // Fall through to refresh
+        // 1. Double-checked locking for session
+        synchronized(this) {
+            if (cachedToken != null && cachedAccountIdHash != null && cachedPatientId != null) {
+                try {
+                    return fetchWithCredentials(cachedToken!!, cachedAccountIdHash!!, cachedPatientId!!)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Cached fetch failed, refreshing session: ${e.message}")
+                    invalidateCache()
+                }
             }
+
+            // 2. Perform login if needed (still inside synchronized to prevent multiple logins)
+            if (email == null || password == null) error("No credentials provided")
+            
+            val (token, accountIdHash) = login(email, password)
+            cachedToken = token
+            cachedAccountIdHash = accountIdHash
+
+            val patientId = fetchPatientId(token, accountIdHash)
+            cachedPatientId = patientId
         }
 
-        // Session refresh flow
-        if (email == null || password == null) error("No credentials provided, use settings button to configure")
-        
-        val (token, accountIdHash) = login(email, password)
-        cachedToken = token
-        cachedAccountIdHash = accountIdHash
-
-        val patientId = fetchPatientId(token, accountIdHash)
-        cachedPatientId = patientId
-
-        return fetchWithCredentials(token, accountIdHash, patientId)
+        // 3. Final fetch with the newly acquired credentials
+        return fetchWithCredentials(cachedToken!!, cachedAccountIdHash!!, cachedPatientId!!)
     }
 
     private fun login(email: String, password: String): Pair<String, String> {
