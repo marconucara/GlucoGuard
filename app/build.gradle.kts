@@ -16,7 +16,7 @@ android {
         minSdk = 30
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
     }
 
@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.security.crypto)
+    implementation(libs.wear.ongoing)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)

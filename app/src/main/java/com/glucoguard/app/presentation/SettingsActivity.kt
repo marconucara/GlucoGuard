@@ -1,6 +1,8 @@
 package com.glucoguard.app.presentation
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -69,6 +71,21 @@ class SettingsActivity : ComponentActivity() {
 @Composable
 fun MainSettingsScreen(onAccountClick: () -> Unit, onThresholdsClick: () -> Unit, onBack: () -> Unit) {
     val listState = rememberScalingLazyListState()
+    val context = LocalContext.current
+    val versionText = remember {
+        try {
+            val pInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+            "v${pInfo.versionName}"
+        } catch (e: Exception) {
+            "v1.0.0"
+        }
+    }
+
     ScalingLazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
@@ -90,6 +107,14 @@ fun MainSettingsScreen(onAccountClick: () -> Unit, onThresholdsClick: () -> Unit
             FilledTonalButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.settings_back))
             }
+        }
+        item {
+            Text(
+                text = versionText,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }
