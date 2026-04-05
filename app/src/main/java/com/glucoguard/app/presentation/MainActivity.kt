@@ -66,7 +66,9 @@ class MainActivity : ComponentActivity() {
             var isBatteryOptIgnored by remember { 
                 mutableStateOf(powerManager.isIgnoringBatteryOptimizations(packageName)) 
             }
-            var hasSkippedBatteryOpt by remember { mutableStateOf(false) }
+            var hasSkippedBatteryOpt by remember { 
+                mutableStateOf(settingsManager.batteryOptAcknowledged) 
+            }
 
             GlucoGuardTheme {
                 when {
@@ -98,6 +100,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onSkip = {
+                                settingsManager.batteryOptAcknowledged = true
                                 hasSkippedBatteryOpt = true
                             },
                             onRefresh = {
@@ -253,7 +256,7 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
     }
 
     // Initial fetch and auto-refresh
-    LaunchedEffect(refreshTrigger) {
+    LaunchedEffect(refreshTrigger, settingsManager.email, settingsManager.password) {
         while(true) {
             val email = settingsManager.email
             val pass = settingsManager.password
@@ -269,7 +272,10 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
                     errorMsg = null
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Fetch error: ${e.message}")
-                    errorMsg = e.message
+                    // Se avevamo già un valore, non mostrare l'errore distruttivo ma solo i dati "stale"
+                    if (glucoseValue == null) {
+                        errorMsg = e.message
+                    }
                 } finally {
                     isRefreshing = false
                 }

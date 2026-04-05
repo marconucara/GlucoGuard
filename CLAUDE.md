@@ -67,8 +67,8 @@ app/src/main/java/com/glucoguard/app/
 
 - [x] **Stale data warning**: Glucose value grays out in `MainActivity` if data is older than the "No Data" threshold.
 - [x] **Persist `alarmActive` state**: Alarm state survives service restarts and reboots.
-- [ ] **WakeLock timeout**: `wakeLock.acquire()` without a timeout is bad practice. Use `acquire(10 * 60 * 1000L)` as a safety upper bound.
-- [ ] **Ongoing Activity** (`androidx.wear.ongoing`): Surface current glucose value on the watch launcher screen.
+- [x] **WakeLock timeout**: Added 10-minute safety timeout to `wakeLock.acquire()`.
+- [x] **Ongoing Activity** (`androidx.wear.ongoing`): Surface current glucose value on the watch launcher screen.
 
 ### Legal / Store
 
@@ -85,4 +85,6 @@ app/src/main/java/com/glucoguard/app/
 - [x] Immediate UI refresh when returning from settings.
 - [x] Medical Disclaimer screen (EN/IT).
 - [x] No Data Alarm: Alerts when connection to LibreLinkUp is lost.
-- [x] Battery Optimization: Flow with Skip option to handle Wear OS restrictions.
+- [x] Battery Optimization: Flow with Skip option and persistent state.
+- [x] Ongoing Activity: Live glucose value in Wear OS launcher.
+- [x] WakeLock Safety: Added timeout to prevent battery drain on crashes.

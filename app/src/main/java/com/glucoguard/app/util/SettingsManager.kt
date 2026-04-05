@@ -50,6 +50,10 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("disclaimer_accepted", false)
         set(value) = prefs.edit().putBoolean("disclaimer_accepted", value).apply()
 
+    var batteryOptAcknowledged: Boolean
+        get() = prefs.getBoolean("battery_opt_acknowledged", false)
+        set(value) = prefs.edit().putBoolean("battery_opt_acknowledged", value).apply()
+
     var lastSuccessfulPollTimestamp: Long
         get() = prefs.getLong("last_poll_ts", 0L)
         set(value) = prefs.edit().putLong("last_poll_ts", value).apply()
