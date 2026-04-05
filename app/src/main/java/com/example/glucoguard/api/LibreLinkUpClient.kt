@@ -1,5 +1,6 @@
 package com.example.glucoguard.api
 
+import android.util.Log
 import com.example.glucoguard.Config
 import com.google.gson.Gson
 import okhttp3.MediaType.Companion.toMediaType
@@ -10,6 +11,7 @@ import java.security.MessageDigest
 
 object LibreLinkUpClient {
 
+    private const val TAG = "LibreLinkUpClient"
     private val client = OkHttpClient()
     private val gson = Gson()
     private val json = "application/json".toMediaType()
@@ -22,10 +24,46 @@ object LibreLinkUpClient {
         "Pragma" to "no-cache"
     )
 
-    /** Performs login → connections → graph and returns the current glucose reading. */
-    fun fetchGlucose(): GlucoseReading {
-        // Step 1 - Login
-        val loginBody = """{"email":"${Config.EMAIL}","password":"${Config.PASSWORD}"}"""
+    // In-memory cache for steady-state polling
+    private var cachedToken: String? = null
+    private var cachedAccountIdHash: String? = null
+    private var cachedPatientId: String? = null
+
+    fun invalidateCache() {
+        Log.i(TAG, "Cache invalidated")
+        cachedToken = null
+        cachedAccountIdHash = null
+        cachedPatientId = null
+    }
+
+    /** Performs glucose fetch, using cached credentials if available, or logging in if needed. */
+    fun fetchGlucose(email: String? = null, password: String? = null): GlucoseReading {
+        // Try with current cache
+        if (cachedToken != null && cachedAccountIdHash != null && cachedPatientId != null) {
+            try {
+                return fetchWithCredentials(cachedToken!!, cachedAccountIdHash!!, cachedPatientId!!)
+            } catch (e: Exception) {
+                Log.w(TAG, "Cached fetch failed, refreshing session: ${e.message}")
+                // Fall through to refresh
+            }
+        }
+
+        // Session refresh flow
+        if (email == null || password == null) error("No credentials provided, use settings button to configure")
+        
+        val (token, accountIdHash) = login(email, password)
+        cachedToken = token
+        cachedAccountIdHash = accountIdHash
+
+        val patientId = fetchPatientId(token, accountIdHash)
+        cachedPatientId = patientId
+
+        return fetchWithCredentials(token, accountIdHash, patientId)
+    }
+
+    private fun login(email: String, password: String): Pair<String, String> {
+        Log.i(TAG, "Performing login...")
+        val loginBody = """{"email":"$email","password":"$password"}"""
             .toRequestBody(json)
         val loginRequest = Request.Builder()
             .url("${Config.BASE_URL}/auth/login")
@@ -34,18 +72,31 @@ object LibreLinkUpClient {
             .header("Content-Type", "application/json")
             .build()
 
-        val loginResponse = client.newCall(loginRequest).execute()
-        check(loginResponse.isSuccessful) { "Login failed: ${loginResponse.code}" }
-        val loginData = gson.fromJson(loginResponse.body!!.string(), LoginResponse::class.java)
+        val response = client.newCall(loginRequest).execute()
+        if (!response.isSuccessful) {
+            error("Login failed: ${response.code} ${response.message}")
+        }
 
-        val token = loginData.data?.authTicket?.token
-            ?: error("Missing auth token")
-        val accountId = loginData.data?.user?.id
-            ?: error("Missing account id")
+        val bodyString = response.body?.string() ?: error("Empty login response")
+        Log.d(TAG, "Login response received (length: ${bodyString.length})")
+        
+        val loginData = gson.fromJson(bodyString, LoginResponse::class.java)
+
+        if (loginData?.data?.authTicket?.token == null) {
+            Log.e(TAG, "Login successful but token missing. Response: $bodyString")
+            error("Missing auth token in response")
+        }
+
+        val token = loginData.data.authTicket.token
+        val accountId = loginData.data.user?.id ?: error("Missing account id")
         val accountIdHash = sha256(accountId)
 
-        // Step 2 - Get connections
-        val connectionsRequest = Request.Builder()
+        return Pair(token, accountIdHash)
+    }
+
+    private fun fetchPatientId(token: String, accountIdHash: String): String {
+        Log.i(TAG, "Fetching patientId...")
+        val request = Request.Builder()
             .url("${Config.BASE_URL}/llu/connections")
             .get()
             .apply { baseHeaders.forEach { (k, v) -> header(k, v) } }
@@ -53,15 +104,19 @@ object LibreLinkUpClient {
             .header("Account-Id", accountIdHash)
             .build()
 
-        val connectionsResponse = client.newCall(connectionsRequest).execute()
-        check(connectionsResponse.isSuccessful) { "Get connections failed: ${connectionsResponse.code}" }
-        val connectionsData = gson.fromJson(connectionsResponse.body!!.string(), ConnectionsResponse::class.java)
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) {
+            error("Get connections failed: ${response.code}")
+        }
 
-        val patientId = connectionsData.data?.firstOrNull()?.patientId
-            ?: error("Missing patientId")
+        val bodyString = response.body?.string() ?: error("Empty connections response")
+        val connectionsData = gson.fromJson(bodyString, ConnectionsResponse::class.java)
 
-        // Step 3 - Get glucose
-        val graphRequest = Request.Builder()
+        return connectionsData.data?.firstOrNull()?.patientId ?: error("No patients found")
+    }
+
+    private fun fetchWithCredentials(token: String, accountIdHash: String, patientId: String): GlucoseReading {
+        val request = Request.Builder()
             .url("${Config.BASE_URL}/llu/connections/$patientId/graph")
             .get()
             .apply { baseHeaders.forEach { (k, v) -> header(k, v) } }
@@ -69,9 +124,13 @@ object LibreLinkUpClient {
             .header("Account-Id", accountIdHash)
             .build()
 
-        val graphResponse = client.newCall(graphRequest).execute()
-        check(graphResponse.isSuccessful) { "Get graph failed: ${graphResponse.code}" }
-        val graphData = gson.fromJson(graphResponse.body!!.string(), GraphResponse::class.java)
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) {
+            throw Exception("API call failed with code ${response.code}")
+        }
+
+        val bodyString = response.body?.string() ?: error("Empty graph response")
+        val graphData = gson.fromJson(bodyString, GraphResponse::class.java)
 
         val measurement = graphData.data?.connection?.glucoseMeasurement
             ?: error("Missing glucose measurement")

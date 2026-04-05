@@ -24,4 +24,19 @@
     <!-- Main screen -->
     <string name="loading">Loading\u2026</string>
     <string name="trend_label">Trend</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_thresholds">Thresholds</string>
+    <string name="settings_libre_creds">LibreLinkUp Credentials</string>
+    <string name="settings_email">Email</string>
+    <string name="settings_password">Password</string>
+    <string name="settings_test_conn">Test Connection</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_normal_thresholds">Normal Thresholds</string>
+    <string name="settings_dnd_thresholds">DND Thresholds</string>
+    <string name="settings_low">Low</string>
+    <string name="settings_high">High</string>
 </resources>
