@@ -1,0 +1,7 @@
+<svg width="108" height="108" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Drop -->
+    <path fill="#00A8A8" d="M54,12C40,35 24,52 24,70C24,86.57 37.43,100 54,100C70.57,100 84,86.57 84,70C84,52 68,35 54,12Z" />
+
+    <!-- Pulse/Trend Line -->
+    <path stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M38,75 L46,75 L50,65 L58,85 L62,75 L70,75" />
+</svg>
