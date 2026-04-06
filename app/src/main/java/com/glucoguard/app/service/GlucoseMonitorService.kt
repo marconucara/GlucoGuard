@@ -53,7 +53,11 @@ class GlucoseMonitorService : Service() {
             }
             
             VibrationHelper.stop(applicationContext)
-            Log.d(TAG, "Snoozed (${if(isNoData) "NoData" else "Glucose"}) for ${durationMs / 60_000}m")
+            Log.d(TAG, "Snoozed (${if(isNoData) "NoData" else "Glucose"}) for ${durationMs / 60_000}m. Optimization: pausing polling until snooze ends.")
+            
+            // Optimization: stop current polling and schedule next poll right after snooze expires
+            handler.removeCallbacks(pollRunnable)
+            scheduleNextPoll(durationMs + 10_000L) // Add 10s buffer to ensure snooze is definitely over
         }
     }
 
