@@ -7,11 +7,15 @@
 ## 🩺 User Guide
 
 ### Why GlucoGuard?
-Most Wear OS apps struggle with aggressive battery management (especially on Samsung Galaxy Watches), often "sleeping" when you need them most. GlucoGuard is built differently:
-- **Always-On Protection**: Uses advanced Android Alarms to wake up and check your data every minute (or as needed), ensuring 24/7 reliability.
-- **Smart Battery (Adaptive Polling)**: The app is "smart". It checks every minute when you are near your limits or your glucose is moving fast, but "relaxes" up to 10 minutes when you are stable and safe to save battery.
-- **DND Aware**: Automatically respects your watch's "Do Not Disturb" mode, switching to a secondary profile with wider thresholds for a peaceful night.
-- **Ongoing Activity**: See your live glucose (e.g., `140↗`) directly in your watch's app launcher or recent apps list.
+As of 2026, many existing glucose monitoring apps for Wear OS have stopped working or lack essential safety features. Most fail to provide a **dependable, vibration-only alarm system** that actually works on the watch. 
+
+GlucoGuard was created to fill this gap with a focus on one fundamental goal: **Reliable Alerts**.
+- **Vibration-Only Focus**: No disruptive sounds, just persistent vibration patterns that ensure you notice the alert.
+- **Smart DND (Day/Night) Profiles**: Unlike other apps, GlucoGuard supports differentiated thresholds based on your watch's **Do Not Disturb** state. You can have strict limits during the day and safer, wider limits for the night to avoid alarm fatigue.
+- **The Perfect Companion**: GlucoGuard is designed as a "safety net". We recommend using it alongside your favorite visualization app (like **Gluroo**) for your watchface. While other apps handle the "view", GlucoGuard handles the "safety".
+- **Always-On Protection**: Uses advanced hardware Alarms to wake up and check your data even in deep sleep, bypassing the aggressive battery management of modern watches like the Samsung Galaxy series.
+
+- **Adaptive Polling**: The app dynamically "relaxes" checks up to 10 minutes when you are stable and safe to save battery, but stays at 1 minute when near limits.
 
 ### Quick Setup
 1. **Invite Yourself as a Caregiver**: In your official **FreeStyle Libre** phone app, go to "Connected Apps" -> "LibreLinkUp" and invite your own email (or a secondary one).
