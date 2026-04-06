@@ -1,90 +1,36 @@
 # GlucoGuard - Wear OS Glucose Alarm App
 
 ## Project Goal
+A minimal Wear OS app for 24/7 glucose monitoring via LibreLinkUp API. Focuses on safety (vibration alarms) and reliability on Samsung Wear OS 4+, without requiring manual battery optimization bypasses.
 
-A minimal Wear OS app that polls LibreLinkUp API every minute and triggers vibration alarms when glucose is out of range. No watchface, no visualization - just background monitoring and alarms.
+## Architecture & Stability Choice
 
-## Architecture
+### 1. The "Indestructible" Service
+- **`GlucoseMonitorService`**: A Foreground Service (`dataSync` type) using a Partial WakeLock.
+- **`AlarmManager` Strategy**: Instead of a software loop, we use `setExactAndAllowWhileIdle`. This forces the system to wake the app even in Doze mode, making it resilient to Samsung's aggressive background killing without needing the "Ignore Battery Optimizations" system dialog.
+- **Self-Healing**: Every poll schedules the next one. If the process is killed, the next Alarm triggers a service restart.
 
-Three components:
+### 2. Battery Optimization (Adaptive Polling)
+The app dynamically adjusts polling frequency to save battery while maintaining safety:
+- **1 min**: Default, or when near thresholds, or with steep trends (↑/↓).
+- **2, 5, or 10 min**: When glucose is stable (→) and far from thresholds.
+- **Slight Trend Multiplier**: Threshold distances are doubled (x2) when the trend is moving away or slightly towards a limit (↘/↗) to balance safety and power.
 
-1. **Foreground Service** - Runs 24/7 with a partial wake lock. Every 60 seconds: authenticates to LibreLinkUp, fetches glucose value, evaluates against thresholds, triggers alarm if needed.
-2. **Alarm Engine** - Evaluates glucose against two threshold profiles: normal and DND. Profile is determined by system Do Not Disturb state.
-3. **Alarm Activity** - Full-screen activity showing glucose value with Dismiss and Snooze buttons.
+### 3. UX & Integration
+- **Ongoing Activity**: Displays live glucose (e.g., "140↗") in the watch launcher/recents.
+- **Alarm Flow**: Out-of-range detected → `VibrationHelper` starts → `MainActivity` (on resume) or `AlarmActivity` (via FullScreenIntent) handles the UI.
 
-## Key Behaviors
-
-- **Snooze is global**: Suppresses all alarms for a set duration (1-120 min).
-- **Vibration**: Strong, repeating pattern via `Vibrator` API.
-- **Alarm flow**: Service detected out-of-range → `alarmActive = true` → `MainActivity.onResume()` detects state → launches `AlarmActivity`.
-- **DND detection**: Uses `NotificationManager.getCurrentInterruptionFilter()`.
-
-## Known Platform Constraints (Samsung Wear OS)
-
-- **BAL (Background Activity Launch)**: Heavily restricted. Alarms must be triggered via foreground activity (MainActivity) or notifications with high priority.
-- **Battery optimization**: Samsung aggressively kills background services. Must be manually excluded by user.
-
-## Tech Stack
-
-- **Language**: Kotlin
-- **UI**: Compose for Wear OS
-- **HTTP**: OkHttp + Gson
-- **Background**: Foreground Service + Partial WakeLock
-- **Localization**: EN (default), IT
-
-## Project Structure
-
-```
-app/src/main/java/com/glucoguard/app/
-  Config.kt                    # Constants (DND thresholds, etc.)
-  GlucoGuardApp.kt             # Application class, DI (SettingsManager)
-  service/
-    GlucoseMonitorService.kt   # Background polling and alarm logic
-  api/
-    LibreLinkUpClient.kt       # API Client (login, fetch)
-    Models.kt                  # Data classes + trendToArrow()
-  alarm/
-    AlarmActivity.kt           # Alarm UI with Snooze/Dismiss
-    VibrationHelper.kt         # Vibration patterns
-  receiver/
-    BootCompletedReceiver.kt   # Starts service on device boot
-  util/
-    SettingsManager.kt         # SharedPreferences wrapper
-    DndHelper.kt               # DND state check
-  presentation/
-    MainActivity.kt            # Main monitor screen
-    SettingsActivity.kt        # Multi-screen settings UI
-```
+## Key Constraints (Samsung Wear OS 4+)
+- **Battery Dialogs**: Standard `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is often blocked/flickers. We bypass this by using `AlarmManager` + `SCHEDULE_EXACT_ALARM`.
+- **DND**: App respects system Do Not Disturb by switching to a "DND Profile" with stricter thresholds (Config.kt).
 
 ## To-Do for Store Release
+- [ ] **Assets**: Capture screenshots (Main, Settings, Alarm) using Device Mirroring.
+- [ ] **Store Listing**: Draft description with medical disclaimers (Unofficial app, not for medical decisions).
 
-### Blockers
-
-- [x] **EncryptedSharedPreferences**: Password is stored in encrypted storage (AndroidX Security Crypto).
-- [ ] **Store Description**: Clarify this is an unofficial third-party app, not an Abbott product, not for medical use. Include privacy policy URL.
-
-### Quality / Reliability
-
-- [x] **Stale data warning**: Glucose value grays out in `MainActivity` if data is older than the "No Data" threshold.
-- [x] **Persist `alarmActive` state**: Alarm state survives service restarts and reboots.
-- [x] **WakeLock timeout**: Added 10-minute safety timeout to `wakeLock.acquire()`.
-- [x] **Ongoing Activity** (`androidx.wear.ongoing`): Surface current glucose value on the watch launcher screen.
-
-### Legal / Store
-
-- [x] **Privacy Policy**: Created `privacy.html` for GitHub Pages.
-- [ ] **Store screenshots**: At least 1 screenshot per main screen (main, alarm, settings).
-
-## Completed
-- [x] Package name changed to `com.glucoguard.app`.
-- [x] Teal/White Branding and Icons.
-- [x] Credential validation in Settings (Test Connection).
-- [x] Reliability fixes for Wear OS keyboard (truncation/sync issues).
-- [x] Re-login synchronization (prevent multiple simultaneous logins).
-- [x] Auto-start on boot (`BootCompletedReceiver`).
-- [x] Immediate UI refresh when returning from settings.
-- [x] Medical Disclaimer screen (EN/IT).
-- [x] No Data Alarm: Alerts when connection to LibreLinkUp is lost.
-- [x] Battery Optimization: Flow with Skip option and persistent state.
-- [x] Ongoing Activity: Live glucose value in Wear OS launcher.
-- [x] WakeLock Safety: Added timeout to prevent battery drain on crashes.
+## Implementation Status (Quick Ref)
+- [x] **Security**: Credentials in `EncryptedSharedPreferences`.
+- [x] **Reliability**: Persistence across reboots (`BootCompletedReceiver`).
+- [x] **Safety**: 10-minute WakeLock safety timeout.
+- [x] **Compliance**: Privacy policy hosted on GitHub Pages.
+- [x] **Localization**: English and Italian support.
