@@ -1,4 +1,4 @@
-# 🛡️ GlucoGuard for Wear OS
+# <img src="art/logo.svg" width="32" vertical-align="middle"> GlucoGuard for Wear OS
 
 **GlucoGuard** is a high-reliability, background monitoring and alarm system for LibreLinkUp users on Wear OS. It is designed to be your "safety net": a minimalist app that ensures you never miss a glucose alert, even when your watch is in deep sleep.
 
