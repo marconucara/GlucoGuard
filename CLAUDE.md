@@ -34,3 +34,10 @@ The app dynamically adjusts polling frequency to save battery while maintaining 
 - [x] **Safety**: 10-minute WakeLock safety timeout.
 - [x] **Compliance**: Privacy policy hosted on GitHub Pages.
 - [x] **Localization**: English and Italian support.
+
+## Documentation Guidelines (README.md)
+- **Structure**: Maintain a clear separation between **User Guide** (first) and **Technical Notes** (second).
+- **Why GlucoGuard?**: Always highlight the lack of reliable alternatives in 2026, the vibration-only focus, and the DND-specific profiles as the primary selling points.
+- **Companion Status**: Explicitly mention it as a companion app to visualization suites like Gluroo.
+- **Setup Flow**: Never remove or over-simplify the LibreLinkUp caregiver invitation flow; it is the #1 point of failure for users.
+- **Clarity**: Keep the tone helpful for users and technical for contributors.
