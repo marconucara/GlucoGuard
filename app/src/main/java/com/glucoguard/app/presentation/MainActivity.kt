@@ -57,19 +57,11 @@ class MainActivity : ComponentActivity() {
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        ContextCompat.startForegroundService(this, Intent(this, GlucoseMonitorService::class.java))
+        val settingsManager = (applicationContext as GlucoGuardApp).settingsManager
+
         setContent {
-            val settingsManager = (applicationContext as GlucoGuardApp).settingsManager
             var isDisclaimerAccepted by remember { mutableStateOf(settingsManager.disclaimerAccepted) }
             
-            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-            var isBatteryOptIgnored by remember { 
-                mutableStateOf(powerManager.isIgnoringBatteryOptimizations(packageName)) 
-            }
-            var hasSkippedBatteryOpt by remember { 
-                mutableStateOf(settingsManager.batteryOptAcknowledged) 
-            }
-
             GlucoGuardTheme {
                 when {
                     !isDisclaimerAccepted -> {
@@ -78,39 +70,18 @@ class MainActivity : ComponentActivity() {
                             isDisclaimerAccepted = true
                         })
                     }
-                    !isBatteryOptIgnored && !hasSkippedBatteryOpt -> {
-                        BatteryOptimizationScreen(
-                            onConfigure = {
-                                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                try {
-                                    startActivity(intent)
-                                } catch (e: Exception) {
-                                    Log.e("MainActivity", "Failed to open battery settings", e)
-                                    // Fallback totale: apri info app
-                                    try {
-                                        val intent2 = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                            data = Uri.parse("package:$packageName")
-                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                        }
-                                        startActivity(intent2)
-                                    } catch (e2: Exception) {
-                                        Log.e("MainActivity", "All battery intents failed")
-                                    }
-                                }
-                            },
-                            onSkip = {
-                                settingsManager.batteryOptAcknowledged = true
-                                hasSkippedBatteryOpt = true
-                            },
-                            onRefresh = {
-                                isBatteryOptIgnored = powerManager.isIgnoringBatteryOptimizations(packageName)
-                            }
-                        )
-                    }
                     else -> {
+                        // Start service only after all permissions/checks are done
+                        LaunchedEffect(Unit) {
+                            try {
+                                ContextCompat.startForegroundService(this@MainActivity, Intent(this@MainActivity, GlucoseMonitorService::class.java))
+                            } catch (e: Exception) {
+                                Log.e("MainActivity", "Failed to start service: ${e.message}")
+                            }
+                        }
+
                         MainGlucoseScreen(
-                            onSettingsClick = { startActivity(Intent(this, SettingsActivity::class.java)) }
+                            onSettingsClick = { startActivity(Intent(this@MainActivity, SettingsActivity::class.java)) }
                         )
                     }
                 }

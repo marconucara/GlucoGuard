@@ -1,5 +1,6 @@
 package com.glucoguard.app.service
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
@@ -8,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -15,6 +17,8 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import androidx.wear.ongoing.OngoingActivity
+import androidx.wear.ongoing.Status
 import com.glucoguard.app.Config
 import com.glucoguard.app.GlucoGuardApp
 import com.glucoguard.app.R
@@ -29,6 +33,7 @@ class GlucoseMonitorService : Service() {
 
     private lateinit var wakeLock: PowerManager.WakeLock
     private val handler = Handler(Looper.getMainLooper())
+    private lateinit var alarmManager: AlarmManager
 
     private val settingsManager by lazy { (application as GlucoGuardApp).settingsManager }
 
@@ -54,6 +59,8 @@ class GlucoseMonitorService : Service() {
 
     private val pollRunnable = object : Runnable {
         override fun run() {
+            scheduleNextPoll() // Schedule next before starting current
+            
             val email = settingsManager.email
             val password = settingsManager.password
 
@@ -66,21 +73,96 @@ class GlucoseMonitorService : Service() {
                         settingsManager.lastSuccessfulPollTimestamp = System.currentTimeMillis()
                         Log.d(TAG, "Glucose: ${reading.value} mg/dL, trend: ${reading.trendToArrow()}")
                         handleReading(reading)
+                        updateOngoingActivity(reading)
+                        
+                        // Adaptive polling: calculate next interval based on reading
+                        val nextIntervalMs = calculateAdaptiveInterval(reading)
+                        scheduleNextPoll(nextIntervalMs)
                     } catch (e: Exception) {
                         Log.e(TAG, "Poll failed: ${e.javaClass.simpleName}: ${e.message}")
                         checkNoDataAlarm()
+                        scheduleNextPoll(Config.POLL_INTERVAL_MS) // Default 1 min on error
                     }
                 }.start()
             }
-            handler.postDelayed(this, Config.POLL_INTERVAL_MS)
+        }
+    }
+
+    private fun calculateAdaptiveInterval(reading: GlucoseReading): Long {
+        val dnd = DndHelper.isDndActive(this)
+        val low = if (dnd) settingsManager.dndLow else settingsManager.normalLow
+        val high = if (dnd) settingsManager.dndHigh else settingsManager.normalHigh
+        
+        val value = reading.value
+        val trend = reading.trend
+        
+        // If out of range, always 1 minute
+        if (value < low || value > high) return Config.POLL_INTERVAL_MS
+        
+        val distLow = value - low
+        val distHigh = high - value
+        
+        return when (trend) {
+            3 -> when { // Constant
+                distLow >= 30 && distHigh >= 30 -> 10 * 60_000L
+                distLow >= 20 && distHigh >= 20 -> 5 * 60_000L
+                distLow >= 10 && distHigh >= 10 -> 2 * 60_000L
+                else -> Config.POLL_INTERVAL_MS
+            }
+            2 -> when { // Slight decrease
+                distLow >= 60 && distHigh >= 30 -> 10 * 60_000L
+                distLow >= 40 && distHigh >= 20 -> 5 * 60_000L
+                distLow >= 20 && distHigh >= 10 -> 2 * 60_000L
+                else -> Config.POLL_INTERVAL_MS
+            }
+            4 -> when { // Slight increase
+                distLow >= 30 && distHigh >= 60 -> 10 * 60_000L
+                distLow >= 20 && distHigh >= 40 -> 5 * 60_000L
+                distLow >= 10 && distHigh >= 20 -> 2 * 60_000L
+                else -> Config.POLL_INTERVAL_MS
+            }
+            else -> Config.POLL_INTERVAL_MS // Rapid change (1 or 5)
+        }
+    }
+
+    private fun scheduleNextPoll(intervalMs: Long = Config.POLL_INTERVAL_MS) {
+        val intent = Intent(this, GlucoseMonitorService::class.java).apply {
+            action = ACTION_REFRESH_POLLING
+        }
+        val pendingIntent = PendingIntent.getService(
+            this, 0, intent, 
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val triggerTime = System.currentTimeMillis() + intervalMs
+        Log.d(TAG, "Scheduling next poll in ${intervalMs / 60_000}m ${ (intervalMs % 60_000) / 1000}s")
+        
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                } else {
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                }
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule exact alarm", e)
+            handler.postDelayed(pollRunnable, Config.POLL_INTERVAL_MS)
         }
     }
 
     override fun onCreate() {
         super.onCreate()
+        alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pm = getSystemService(POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "GlucoGuard:PollWakeLock")
-        wakeLock.acquire()
+        try {
+            wakeLock.acquire(10 * 60 * 1000L)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to acquire wakelock in onCreate: ${e.message}")
+        }
         ContextCompat.registerReceiver(
             this, snoozeReceiver,
             IntentFilter(ACTION_SNOOZE),
@@ -104,12 +186,16 @@ class GlucoseMonitorService : Service() {
                 triggerAlarm(GlucoseReading(55, 1), true) // Test alarm: Low glucose
             }
             ACTION_REFRESH_POLLING -> {
-                Log.d(TAG, "Refresh polling requested")
+                Log.d(TAG, "Refresh polling requested via AlarmManager")
                 handler.removeCallbacks(pollRunnable)
                 handler.post(pollRunnable)
             }
             else -> {
-                startForeground(NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+                try {
+                    startForeground(NOTIFICATION_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to startForeground: ${e.message}")
+                }
                 handler.removeCallbacks(pollRunnable)
                 handler.post(pollRunnable)
             }
@@ -177,6 +263,20 @@ class GlucoseMonitorService : Service() {
         }
     }
 
+    private fun updateOngoingActivity(reading: GlucoseReading) {
+        val status = Status.Builder()
+            .addTemplate("${reading.value}${reading.trendToArrow()}")
+            .build()
+
+        val ongoingActivity = OngoingActivity.Builder(applicationContext, NOTIFICATION_ID, buildNotificationBuilder())
+            .setStaticIcon(R.drawable.ic_logo)
+            .setTouchIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
+            .setStatus(status)
+            .build()
+
+        ongoingActivity.apply(applicationContext)
+    }
+
     private fun triggerAlarm(reading: GlucoseReading, isLow: Boolean) {
         alarmActive.set(true)
         lastAlarmValue = reading.value
@@ -199,6 +299,10 @@ class GlucoseMonitorService : Service() {
     }
 
     private fun buildNotification(): Notification {
+        return buildNotificationBuilder().build()
+    }
+
+    private fun buildNotificationBuilder(): NotificationCompat.Builder {
         val openIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java),
@@ -210,7 +314,6 @@ class GlucoseMonitorService : Service() {
             .setSmallIcon(R.drawable.ic_logo)
             .setContentIntent(openIntent)
             .setOngoing(true)
-            .build()
     }
 
     companion object {

@@ -111,7 +111,7 @@ module.exports.fetchGlucose = async function fetchGlucose() {
         .digest("hex"),
     },
   });
-  console.log("Connection response status:", connRes);
+  // console.log("Connection response status:", connRes);
   if (!connRes.ok) throw new Error("Get connectionId failed");
   const connData = await connRes.json();
   const connectionId =
