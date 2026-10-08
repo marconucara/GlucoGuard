@@ -126,6 +126,7 @@ fun AccountSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsManag
     
     var testing by remember { mutableStateOf(false) }
     var testResult by remember { mutableStateOf<Boolean?>(null) } // null = none, true = success, false = fail
+    var testError by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
@@ -133,6 +134,7 @@ fun AccountSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsManag
     // Reset test result if user changes credentials
     LaunchedEffect(email, password) {
         testResult = null
+        testError = null
     }
 
     ScalingLazyColumn(
@@ -208,6 +210,7 @@ fun AccountSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsManag
                 onClick = {
                     testing = true
                     testResult = null
+                    testError = null
                     focusManager.clearFocus()
                     scope.launch {
                         testResult = withContext(Dispatchers.IO) {
@@ -217,6 +220,7 @@ fun AccountSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsManag
                                 true
                             } catch (e: Exception) {
                                 Log.e("SettingsActivity", "Test connection failed: ${e.message}")
+                                testError = LibreLinkUpClient.actionRequiredMessage(context, e)
                                 false
                             }
                         }
@@ -245,6 +249,18 @@ fun AccountSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsManag
                         }
                     )
                 }
+            }
+        }
+
+        testError?.let { message ->
+            item {
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Red,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
+                )
             }
         }
 
