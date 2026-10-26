@@ -245,7 +245,7 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
                     Log.e("MainActivity", "Fetch error: ${e.message}")
                     // Se avevamo già un valore, non mostrare l'errore distruttivo ma solo i dati "stale"
                     if (glucoseValue == null) {
-                        errorMsg = e.message
+                        errorMsg = LibreLinkUpClient.actionRequiredMessage(context, e) ?: e.message
                     }
                 } finally {
                     isRefreshing = false
@@ -304,7 +304,7 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Red,
                     textAlign = TextAlign.Center,
-                    maxLines = 2
+                    maxLines = 3
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 FilledTonalButton(onClick = onSettingsClick, modifier = Modifier.height(32.dp)) {
