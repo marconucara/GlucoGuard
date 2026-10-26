@@ -24,9 +24,14 @@ The app dynamically adjusts polling frequency to save battery while maintaining 
 - **Battery Dialogs**: Standard `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is often blocked/flickers. We bypass this by using `AlarmManager` + `SCHEDULE_EXACT_ALARM`.
 - **DND**: App respects system Do Not Disturb by switching to a "DND Profile" with stricter thresholds (Config.kt).
 
-## To-Do for Store Release
-- [ ] **Assets**: Capture screenshots (Main, Settings, Alarm) using Device Mirroring.
-- [ ] **Store Listing**: Draft description with medical disclaimers (Unofficial app, not for medical decisions).
+## Distribution (decided 2026-10-08)
+- **No Play Store**: The app will not be published on Google Play. Health-app policy requirements and technical limits outweigh the benefits.
+- **GitHub Releases**: Distributed as open source, with a signed release APK attached to GitHub Releases. Every release must be signed with the same keystore, or users have to uninstall before updating.
+
+## To-Do for GitHub Release
+- [ ] **Test**: Install and verify the minified release APK on a real watch (login, glucose reading, alarm).
+- [ ] **Assets**: Capture screenshots (Main, Settings, Alarm) using Device Mirroring for the README.
+- [ ] **Release Notes**: Write install steps and medical disclaimers (Unofficial app, not for medical decisions).
 
 ## Implementation Status (Quick Ref)
 - [x] **Security**: Credentials in `EncryptedSharedPreferences`.
