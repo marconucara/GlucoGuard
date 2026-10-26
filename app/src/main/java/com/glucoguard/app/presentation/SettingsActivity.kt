@@ -273,7 +273,7 @@ fun AccountSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsManag
                     val newEmail = email.trim()
                     val newPassword = password.trim()
                     
-                    Log.i("SettingsActivity", "Saving account settings: email=$newEmail, password=$newPassword")
+                    Log.i("SettingsActivity", "Saving account settings")
                     settingsManager.email = newEmail
                     settingsManager.password = newPassword
                     
