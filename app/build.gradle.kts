@@ -41,7 +41,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.play.services.wearable)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
     implementation(libs.ui.graphics)
