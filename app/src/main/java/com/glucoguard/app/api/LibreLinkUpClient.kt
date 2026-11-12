@@ -1,7 +1,9 @@
 package com.glucoguard.app.api
 
+import android.content.Context
 import android.util.Log
 import com.glucoguard.app.Config
+import com.glucoguard.app.R
 import com.google.gson.Gson
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -85,6 +87,12 @@ object LibreLinkUpClient {
         
         val loginData = gson.fromJson(bodyString, LoginResponse::class.java)
 
+        // A pending step (new terms, privacy notice, ...) returns a token but no user id
+        loginData?.data?.step?.let { step ->
+            Log.w(TAG, "Login requires action in LibreLinkUp app: ${step.type}")
+            throw LoginActionRequiredException(step.type)
+        }
+
         if (loginData?.data?.authTicket?.token == null) {
             Log.e(TAG, "Login successful but token missing. Response: $bodyString")
             error("Missing auth token in response")
@@ -141,6 +149,15 @@ object LibreLinkUpClient {
         val trend = measurement.TrendArrow ?: 0
 
         return GlucoseReading(value, trend)
+    }
+
+    /** User-facing text for a login/fetch failure, or null if there is no specific guidance. */
+    fun actionRequiredMessage(context: Context, e: Exception): String? {
+        if (e !is LoginActionRequiredException) return null
+        return when (e.stepType) {
+            "tou" -> context.getString(R.string.error_accept_terms)
+            else -> context.getString(R.string.error_action_required)
+        }
     }
 
     private fun sha256(input: String): String {
