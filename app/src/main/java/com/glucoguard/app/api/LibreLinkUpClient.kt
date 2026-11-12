@@ -94,7 +94,7 @@ object LibreLinkUpClient {
         }
 
         if (loginData?.data?.authTicket?.token == null) {
-            Log.e(TAG, "Login successful but token missing. Response: $bodyString")
+            Log.e(TAG, "Login successful but token missing (response length: ${bodyString.length})")
             error("Missing auth token in response")
         }
 
