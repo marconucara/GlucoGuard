@@ -16,6 +16,7 @@ GlucoGuard was created to fill this gap with a focus on one fundamental goal: **
 - **Always-On Protection**: Uses advanced hardware Alarms to wake up and check your data even in deep sleep, bypassing the aggressive battery management of modern watches like the Samsung Galaxy series.
 
 - **Adaptive Polling**: The app dynamically "relaxes" checks up to 10 minutes when you are stable and safe to save battery, but stays at 1 minute when near limits.
+- **Quiet on the Charger**: When the watch is on its charger it is not on your wrist, so alarms stay silent instead of rattling it off the table. As soon as you unplug it, GlucoGuard checks your glucose right away and alarms again if you are still out of range. On by default; you can turn it off in Settings → Thresholds.
 
 ### Quick Setup
 1. **Invite Yourself as a Caregiver**: In your official **FreeStyle Libre** phone app, go to "Connected Apps" -> "LibreLinkUp" and invite your own email (or a secondary one).

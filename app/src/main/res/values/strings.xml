@@ -42,6 +42,8 @@
     <string name="settings_low">Low</string>
     <string name="settings_high">High</string>
     <string name="settings_no_data_threshold">No Data Alarm (min)</string>
+    <string name="settings_silence_while_charging">Silence alarms while charging</string>
+    <string name="main_alarms_paused_charging">Alarms paused: charging</string>
 
     <!-- Disclaimer -->
     <string name="disclaimer_title">Medical Disclaimer</string>

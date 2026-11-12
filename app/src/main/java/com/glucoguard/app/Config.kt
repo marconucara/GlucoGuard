@@ -11,4 +11,5 @@ object Config {
     const val DEFAULT_DND_LOW = 60
     const val DEFAULT_DND_HIGH = 250
     const val DEFAULT_NO_DATA_THRESHOLD_MIN = 10
+    const val DEFAULT_SILENCE_ALARMS_WHILE_CHARGING = true
 }

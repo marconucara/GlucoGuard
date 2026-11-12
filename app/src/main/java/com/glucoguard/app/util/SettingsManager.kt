@@ -62,6 +62,11 @@ class SettingsManager(context: Context) {
         get() = prefs.getInt("no_data_threshold", Config.DEFAULT_NO_DATA_THRESHOLD_MIN)
         set(value) = prefs.edit().putInt("no_data_threshold", value).apply()
 
+    // Off the wrist on a charger, a vibrating watch only rattles on the table
+    var silenceAlarmsWhileCharging: Boolean
+        get() = prefs.getBoolean("silence_alarms_while_charging", Config.DEFAULT_SILENCE_ALARMS_WHILE_CHARGING)
+        set(value) = prefs.edit().putBoolean("silence_alarms_while_charging", value).apply()
+
     var noDataSnoozeUntil: Long
         get() = prefs.getLong("no_data_snooze_until", 0L)
         set(value) = prefs.edit().putLong("no_data_snooze_until", value).apply()

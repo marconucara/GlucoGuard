@@ -1,6 +1,7 @@
 package com.glucoguard.app.presentation
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -39,6 +40,7 @@ import com.glucoguard.app.api.GlucoseReading
 import com.glucoguard.app.api.LibreLinkUpClient
 import com.glucoguard.app.presentation.theme.GlucoGuardTheme
 import com.glucoguard.app.service.GlucoseMonitorService
+import com.glucoguard.app.util.ChargingHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -212,18 +214,37 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var isRefreshing by remember { mutableStateOf(false) }
     var refreshTrigger by remember { mutableStateOf(0) }
+    var alarmsSilencedByCharger by remember { mutableStateOf(ChargingHelper.alarmsSilenced(context, settingsManager)) }
 
     // Trigger refresh when activity resumes
     DisposableEffect(context) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
                 refreshTrigger++
+                // The setting may have changed in SettingsActivity
+                alarmsSilencedByCharger = ChargingHelper.alarmsSilenced(context, settingsManager)
             }
         }
         (context as ComponentActivity).lifecycle.addObserver(observer)
         onDispose {
             (context as ComponentActivity).lifecycle.removeObserver(observer)
         }
+    }
+
+    // Update the "alarms paused" hint as soon as the charger is plugged in or removed
+    DisposableEffect(context) {
+        val powerReceiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                alarmsSilencedByCharger = settingsManager.silenceAlarmsWhileCharging &&
+                    intent.action == Intent.ACTION_POWER_CONNECTED
+            }
+        }
+        ContextCompat.registerReceiver(
+            context, powerReceiver,
+            ChargingHelper.powerChangeFilter(),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        onDispose { context.unregisterReceiver(powerReceiver) }
     }
 
     // Initial fetch and auto-refresh
@@ -347,6 +368,15 @@ fun MainGlucoseScreen(onSettingsClick: () -> Unit) {
                         text = "Stale ($mins min ago)",
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.Red.copy(alpha = 0.8f)
+                    )
+                }
+
+                if (alarmsSilencedByCharger) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.main_alarms_paused_charging),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
                     )
                 }
             }

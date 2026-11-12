@@ -40,6 +40,8 @@
     <string name="settings_low">Min</string>
     <string name="settings_high">Max</string>
     <string name="settings_no_data_threshold">Allarme Assenza Dati (min)</string>
+    <string name="settings_silence_while_charging">Silenzia allarmi in carica</string>
+    <string name="main_alarms_paused_charging">Allarmi in pausa: in carica</string>
 
     <!-- Disclaimer -->
     <string name="disclaimer_title">Disclaimer Medico</string>
