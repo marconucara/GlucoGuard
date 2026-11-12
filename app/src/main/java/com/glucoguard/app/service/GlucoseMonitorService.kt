@@ -26,6 +26,7 @@ import com.glucoguard.app.alarm.VibrationHelper
 import com.glucoguard.app.api.GlucoseReading
 import com.glucoguard.app.api.LibreLinkUpClient
 import com.glucoguard.app.presentation.MainActivity
+import com.glucoguard.app.util.ChargingHelper
 import com.glucoguard.app.util.DndHelper
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -58,6 +59,26 @@ class GlucoseMonitorService : Service() {
             // Optimization: stop current polling and schedule next poll right after snooze expires
             handler.removeCallbacks(pollRunnable)
             scheduleNextPoll(durationMs + 10_000L) // Add 10s buffer to ensure snooze is definitely over
+        }
+    }
+
+    private val powerReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (!settingsManager.silenceAlarmsWhileCharging) return
+            when (intent.action) {
+                Intent.ACTION_POWER_CONNECTED -> {
+                    Log.d(TAG, "On charger — silencing active alarms")
+                    clearActiveAlarms()
+                }
+                Intent.ACTION_POWER_DISCONNECTED -> {
+                    // Polling is paused during a glucose snooze; the poll at snooze end takes over
+                    if (System.currentTimeMillis() < settingsManager.glucoseSnoozeUntil) return
+                    // Poll right away so an out-of-range alarm resumes as soon as the watch is back on the wrist
+                    Log.d(TAG, "Off charger — polling now")
+                    handler.removeCallbacks(pollRunnable)
+                    handler.post(pollRunnable)
+                }
+            }
         }
     }
 
@@ -172,6 +193,11 @@ class GlucoseMonitorService : Service() {
             IntentFilter(ACTION_SNOOZE),
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
+        ContextCompat.registerReceiver(
+            this, powerReceiver,
+            ChargingHelper.powerChangeFilter(),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
 
         // Resume state from persistent storage
         alarmActive.set(settingsManager.alarmActive)
@@ -180,7 +206,11 @@ class GlucoseMonitorService : Service() {
         lastAlarmIsLow = settingsManager.lastAlarmIsLow
         
         if (alarmActive.get() || noDataAlarmActive.get()) {
-            VibrationHelper.start(applicationContext)
+            if (ChargingHelper.alarmsSilenced(this, settingsManager)) {
+                clearActiveAlarms()
+            } else {
+                VibrationHelper.start(applicationContext)
+            }
         }
     }
 
@@ -211,6 +241,7 @@ class GlucoseMonitorService : Service() {
         super.onDestroy()
         handler.removeCallbacks(pollRunnable)
         unregisterReceiver(snoozeReceiver)
+        unregisterReceiver(powerReceiver)
         if (wakeLock.isHeld) wakeLock.release()
     }
 
@@ -243,6 +274,12 @@ class GlucoseMonitorService : Service() {
             return
         }
 
+        if (ChargingHelper.alarmsSilenced(this, settingsManager)) {
+            Log.d(TAG, "Out of range (${reading.value}) but on charger — skipping alarm")
+            clearActiveAlarms()
+            return
+        }
+
         val isLow = reading.value < low
         Log.w(TAG, "ALARM: glucose ${reading.value} mg/dL out of range [$low-$high], DND=$dnd, isLow=$isLow")
         triggerAlarm(reading, isLow)
@@ -259,6 +296,12 @@ class GlucoseMonitorService : Service() {
             val now = System.currentTimeMillis()
             if (now < settingsManager.noDataSnoozeUntil) {
                 Log.d(TAG, "No data ($minutesSinceLastPoll min) but snoozed — skipping alarm")
+                return
+            }
+
+            if (ChargingHelper.alarmsSilenced(this, settingsManager)) {
+                Log.d(TAG, "No data ($minutesSinceLastPoll min) but on charger — skipping alarm")
+                clearActiveAlarms()
                 return
             }
             
@@ -292,6 +335,16 @@ class GlucoseMonitorService : Service() {
         
         Log.w(TAG, "triggerAlarm() — vibrating")
         VibrationHelper.start(applicationContext)
+    }
+
+    // Used when the watch goes on the charger: stop vibrating and forget the alarm,
+    // so it is re-evaluated from scratch once the watch is unplugged.
+    private fun clearActiveAlarms() {
+        alarmActive.set(false)
+        noDataAlarmActive.set(false)
+        settingsManager.alarmActive = false
+        settingsManager.noDataAlarmActive = false
+        VibrationHelper.stop(applicationContext)
     }
 
     private fun triggerNoDataAlarm() {

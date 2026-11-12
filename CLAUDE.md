@@ -19,6 +19,7 @@ The app dynamically adjusts polling frequency to save battery while maintaining 
 ### 3. UX & Integration
 - **Ongoing Activity**: Displays live glucose (e.g., "140↗") in the watch launcher/recents.
 - **Alarm Flow**: Out-of-range detected → `VibrationHelper` starts → `MainActivity` (on resume) or `AlarmActivity` (via FullScreenIntent) handles the UI.
+- **Silence While Charging** (setting, on by default): on a charger, glucose and no-data alarms are skipped and any active alarm is cleared (`ChargingHelper`). Unplugging triggers an immediate poll so alarms resume at once. The settings test alarm always vibrates.
 
 ## Key Constraints (Samsung Wear OS 4+)
 - **Battery Dialogs**: Standard `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is often blocked/flickers. We bypass this by using `AlarmManager` + `SCHEDULE_EXACT_ALARM`.

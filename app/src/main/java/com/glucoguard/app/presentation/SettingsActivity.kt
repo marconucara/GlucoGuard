@@ -300,7 +300,8 @@ fun ThresholdSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsMan
     var dLow by remember { mutableStateOf(settingsManager.dndLow.toString()) }
     var dHigh by remember { mutableStateOf(settingsManager.dndHigh.toString()) }
     var noDataThreshold by remember { mutableStateOf(settingsManager.noDataThresholdMin.toString()) }
-    
+    var silenceWhileCharging by remember { mutableStateOf(settingsManager.silenceAlarmsWhileCharging) }
+
     ScalingLazyColumn(
         state = rememberScalingLazyListState(),
         modifier = Modifier.fillMaxSize(),
@@ -318,6 +319,14 @@ fun ThresholdSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsMan
         item { Spacer(modifier = Modifier.height(8.dp)) }
         item { Text("Safety", style = MaterialTheme.typography.titleSmall) }
         item { ThresholdInput(stringResource(R.string.settings_no_data_threshold), noDataThreshold, "min") { noDataThreshold = it } }
+        item {
+            SwitchButton(
+                checked = silenceWhileCharging,
+                onCheckedChange = { silenceWhileCharging = it },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                label = { Text(stringResource(R.string.settings_silence_while_charging), style = MaterialTheme.typography.labelSmall) }
+            )
+        }
 
         item {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -331,12 +340,13 @@ fun ThresholdSettingsScreen(settingsManager: com.glucoguard.app.util.SettingsMan
                     val dh = dHigh.toIntOrNull() ?: settingsManager.dndHigh
                     val ndt = noDataThreshold.toIntOrNull() ?: settingsManager.noDataThresholdMin
                     
-                    Log.i("SettingsActivity", "Saving thresholds: N[$nl-$nh], DND[$dl-$dh], NoData: $ndt")
+                    Log.i("SettingsActivity", "Saving thresholds: N[$nl-$nh], DND[$dl-$dh], NoData: $ndt, SilenceWhileCharging: $silenceWhileCharging")
                     settingsManager.normalLow = nl
                     settingsManager.normalHigh = nh
                     settingsManager.dndLow = dl
                     settingsManager.dndHigh = dh
                     settingsManager.noDataThresholdMin = ndt
+                    settingsManager.silenceAlarmsWhileCharging = silenceWhileCharging
                     
                     onBack()
                 }, modifier = Modifier.weight(1f)) {
